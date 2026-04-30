@@ -1,10 +1,15 @@
 // Pointer interactions, route editing, selection deletion, flip, and clear actions.
 function routeDefaultsForTool(tool) {
   const style = normalizeRouteStyle(state.routeStyle);
-  if (tool === 'block') return { type: 'block', end: 't', mode: 'straight', ...style };
-  if (tool === 'pass') return { type: 'pass', end: 'dot', mode: 'straight', ...style };
+  const mode = normalizeRouteMode(tool === 'draw' ? 'draw' : controls.routeShape.value || state.routeMode);
+  if (tool === 'block') return { type: 'block', end: 't', mode, ...style };
+  if (tool === 'pass') return { type: 'pass', end: 'dot', mode, ...style };
   if (tool === 'motion') return { type: 'motion', end: 'arrow', mode: 'straight', ...style };
-  return { type: 'route', end: controls.endCap.value, mode: 'straight', ...style };
+  return { type: 'route', end: controls.endCap.value, mode, ...style };
+}
+
+function pointDistance(a, b) {
+  return Math.hypot(a[0] - b[0], a[1] - b[1]);
 }
 
 function startRoute(player, event) {
@@ -13,28 +18,120 @@ function startRoute(player, event) {
   const point = pointFromEvent(event);
   state.routeDraft = {
     ...defaults,
+    input: 'drag',
     playerId: player.id,
     points: [start, [point.x, point.y]]
   };
-  state.drag = { kind: 'draw-route' };
-  setStatus('Drawing');
+  state.drag = { kind: 'draw-route', start: [point.x, point.y], moved: false };
+  setStatus('Drag or click points');
   drawTemp();
 }
 
 function updateRouteDraft(event) {
   if (!state.routeDraft) return;
   const point = pointFromEvent(event);
+  if (state.drag?.kind === 'draw-route' && pointDistance([point.x, point.y], state.drag.start) > 8) {
+    state.drag.moved = true;
+  }
   const points = state.routeDraft.points;
   points[points.length - 1] = [point.x, point.y];
 
   drawTemp();
 }
 
+function startFreehandRoute(player) {
+  const defaults = routeDefaultsForTool('draw');
+  const start = clampPoint([player.x, player.y]);
+  state.routeDraft = {
+    ...defaults,
+    input: 'freehand',
+    playerId: player.id,
+    points: [start]
+  };
+  state.drag = { kind: 'freehand-route', last: start };
+  setStatus('Drawing');
+  drawTemp();
+}
+
+function updateFreehandDraft(event) {
+  if (!state.routeDraft) return;
+  const point = pointFromEvent(event);
+  const next = [point.x, point.y];
+  const last = state.routeDraft.points[state.routeDraft.points.length - 1];
+  if (!last || pointDistance(next, last) > 5) {
+    state.routeDraft.points.push(next);
+    state.drag.last = next;
+    drawTemp();
+  }
+}
+
+function startPolylineFromDraft(event) {
+  if (!state.routeDraft) return;
+  const point = pointFromEvent(event);
+  state.routeDraft.input = 'poly';
+  state.routeDraft.points = [state.routeDraft.points[0]];
+  state.routeDraft.previewPoint = [point.x, point.y];
+  state.drag = null;
+  setStatus('Click points, Enter to finish');
+  drawTemp();
+}
+
+function addPolylinePoint(point) {
+  if (!state.routeDraft) return;
+  const next = [point.x, point.y];
+  const points = state.routeDraft.points;
+  const previous = points[points.length - 1];
+  if (!previous || pointDistance(next, previous) > 4) {
+    points.push(next);
+  }
+  state.routeDraft.previewPoint = next;
+  drawTemp();
+}
+
+function updatePolylinePreview(event) {
+  if (!state.routeDraft) return;
+  const point = pointFromEvent(event);
+  state.routeDraft.previewPoint = [point.x, point.y];
+  drawTemp();
+}
+
+function perpendicularDistance(point, start, end) {
+  const dx = end[0] - start[0];
+  const dy = end[1] - start[1];
+  const lengthSq = dx * dx + dy * dy;
+  if (!lengthSq) return pointDistance(point, start);
+  const t = clamp(((point[0] - start[0]) * dx + (point[1] - start[1]) * dy) / lengthSq, 0, 1);
+  const projection = [start[0] + dx * t, start[1] + dy * t];
+  return pointDistance(point, projection);
+}
+
+function simplifyPoints(points, tolerance = 5) {
+  if (points.length <= 2) return points;
+  let maxDistance = 0;
+  let index = 0;
+  const end = points.length - 1;
+  for (let i = 1; i < end; i += 1) {
+    const distance = perpendicularDistance(points[i], points[0], points[end]);
+    if (distance > maxDistance) {
+      maxDistance = distance;
+      index = i;
+    }
+  }
+  if (maxDistance <= tolerance) return [points[0], points[end]];
+  return [
+    ...simplifyPoints(points.slice(0, index + 1), tolerance).slice(0, -1),
+    ...simplifyPoints(points.slice(index), tolerance)
+  ];
+}
+
 function finishRoute() {
   if (!state.routeDraft) return;
-  const points = sanitizePoints(state.routeDraft.points);
+  let points = sanitizePoints(state.routeDraft.points);
+  if (state.routeDraft.mode === 'draw') points = simplifyPoints(points, 6);
+  if (state.routeDraft.mode === 'curve') points = simplifyPoints(points, 3);
   if (points.length >= 2 && routeLength(points) > 20) {
-    const route = { id: makeId('route'), ...state.routeDraft, points };
+    const { input, previewPoint, ...draft } = state.routeDraft;
+    const route = { id: makeId('route'), ...draft, points };
     state.routes.push(route);
     state.routeDraft = null;
     state.drag = null;
@@ -74,6 +171,128 @@ function createAnnotation(point) {
   saveLocal(false);
 }
 
+function syncPresetButtons() {
+  document.querySelectorAll('[data-preset]').forEach((button) => {
+    button.classList.toggle('is-pending', state.pendingPreset === button.dataset.preset);
+  });
+}
+
+function routePresetDefinition(presetName, player) {
+  if (!ROUTE_PRESETS.some((preset) => preset.value === presetName)) return null;
+  const centerX = (FIELD_DIMENSIONS.left + FIELD_DIMENSIONS.right) / 2;
+  const inside = player.x <= centerX ? 1 : -1;
+  const outside = -inside;
+  const presets = {
+    go: {
+      type: 'route',
+      end: 'arrow',
+      mode: 'straight',
+      points: [[0, 0], [0, -8]]
+    },
+    out: {
+      type: 'route',
+      end: 'arrow',
+      mode: 'straight',
+      points: [[0, 0], [0, -4], [outside * 5, -4]]
+    },
+    in: {
+      type: 'route',
+      end: 'arrow',
+      mode: 'straight',
+      points: [[0, 0], [0, -5], [inside * 6, -5]]
+    },
+    slant: {
+      type: 'route',
+      end: 'arrow',
+      mode: 'straight',
+      points: [[0, 0], [inside * 5, -5]]
+    },
+    post: {
+      type: 'route',
+      end: 'arrow',
+      mode: 'curve',
+      points: [[0, 0], [0, -5], [inside * 5, -10]]
+    },
+    corner: {
+      type: 'route',
+      end: 'arrow',
+      mode: 'curve',
+      points: [[0, 0], [0, -5], [outside * 5, -10]]
+    },
+    curl: {
+      type: 'route',
+      end: 't',
+      mode: 'curve',
+      points: [[0, 0], [0, -7], [inside * 1.5, -6]]
+    },
+    motion: {
+      type: 'motion',
+      end: 'arrow',
+      mode: 'straight',
+      points: [[0, 0], [outside * 7, 0]]
+    },
+    block: {
+      type: 'block',
+      end: 't',
+      mode: 'straight',
+      points: [[0, 0], [inside * 1.5, -2]]
+    }
+  };
+  return presets[presetName] || null;
+}
+
+function createPresetRoute(player, presetName) {
+  const preset = routePresetDefinition(presetName, player);
+  if (!preset) return;
+  const style = normalizeRouteStyle(state.routeStyle);
+  const points = preset.points.map(([dx, dy]) => (
+    clampPoint([player.x + dx * FIELD_DIMENSIONS.yardScale, player.y + dy * FIELD_DIMENSIONS.yardScale])
+  ));
+  const route = {
+    id: makeId('route'),
+    playerId: player.id,
+    ...style,
+    type: preset.type,
+    end: preset.end,
+    mode: preset.mode,
+    points
+  };
+  state.routes.push(route);
+  state.pendingPreset = null;
+  selectThing('route', route.id);
+  saveLocal(false);
+  setStatus(`${presetName} route`);
+}
+
+function activateRoutePreset(presetName) {
+  const player = state.selectedType === 'player'
+    ? state.players.find((item) => item.id === state.selectedId)
+    : null;
+  if (player) {
+    createPresetRoute(player, presetName);
+    return;
+  }
+  state.pendingPreset = presetName;
+  syncPresetButtons();
+  setStatus('Select player');
+}
+
+function updateRouteMode(mode) {
+  const cleanMode = normalizeRouteMode(mode);
+  const route = activeRoute();
+  if (route) {
+    route.mode = cleanMode;
+    saveLocal(false);
+    render();
+    setStatus('Route Shape');
+    return;
+  }
+  state.routeMode = cleanMode;
+  saveLocal(false);
+  syncRouteShapeControl();
+  setStatus('Route Default');
+}
+
 function moveRoute(route, dx, dy) {
   route.points = route.points.map((point) => clampPoint([point[0] + dx, point[1] + dy]));
 }
@@ -82,6 +301,11 @@ function handlePointerDown(event) {
   const hit = targetFromEvent(event);
   const point = pointFromEvent(event);
   field.setPointerCapture(event.pointerId);
+
+  if (state.routeDraft?.input === 'poly') {
+    addPolylinePoint(point);
+    return;
+  }
 
   if (hit?.kind === 'route-point') {
     selectThing('route', hit.id);
@@ -103,9 +327,16 @@ function handlePointerDown(event) {
     return;
   }
 
+  if (hit?.kind === 'player' && state.pendingPreset) {
+    const player = state.players.find((item) => item.id === hit.id);
+    if (player) createPresetRoute(player, state.pendingPreset);
+    return;
+  }
+
   if (hit?.kind === 'player' && DRAW_TOOLS.includes(state.tool)) {
     const player = state.players.find((item) => item.id === hit.id);
-    if (player) startRoute(player, event);
+    if (player && state.tool === 'draw') startFreehandRoute(player);
+    else if (player) startRoute(player, event);
     return;
   }
 
@@ -132,10 +363,20 @@ function handlePointerDown(event) {
 }
 
 function handlePointerMove(event) {
+  if (state.routeDraft?.input === 'poly' && !state.drag) {
+    updatePolylinePreview(event);
+    return;
+  }
+
   if (!state.drag) return;
 
   if (state.drag.kind === 'draw-route') {
     updateRouteDraft(event);
+    return;
+  }
+
+  if (state.drag.kind === 'freehand-route') {
+    updateFreehandDraft(event);
     return;
   }
 
@@ -169,8 +410,14 @@ function handlePointerMove(event) {
   render();
 }
 
-function handlePointerUp() {
+function handlePointerUp(event) {
   if (state.drag?.kind === 'draw-route') {
+    if (state.drag.moved) finishRoute();
+    else startPolylineFromDraft(event);
+    return;
+  }
+
+  if (state.drag?.kind === 'freehand-route') {
     finishRoute();
     return;
   }

@@ -22,6 +22,10 @@ Open `index.html` in a browser and start designing. No build step or server is r
 - Draw 5-on-5 flag football plays on a field diagram
 - Move offense players, defense markers, routes, route points, and text annotations
 - Draw route, motion, pass, and block lines from offensive players
+- Draw freehand routes and smooth curved routes from offensive players
+- Click from a player to place route points one by one, then press Enter or double-click to finish
+- Add common route presets such as Go, Out, In, Slant, Post, Corner, Curl, Motion, and Block
+- Use a mobile-friendly canvas-first layout with a fixed bottom tool dock
 - Edit route points with handles and add intermediate points
 - Customize line color, line width, line opacity, end cap type, and end cap size
 - Keep offensive player numbers visible by rendering players above drawn lines
@@ -43,16 +47,22 @@ Open `index.html` in a browser and start designing. No build step or server is r
 3. Drag folders or plays in the tree to reorder them.
 4. Drag a play onto another folder to move it there.
 5. Select a drawing tool, then drag from an offensive player to create a line.
-6. Select a line to change its end cap, color, width, opacity, or shape points.
-7. Add notes in `Play Notes`; they appear on the right side of the diagram.
-8. Use `Save As` to download a JSON playbook file.
-9. Use `Open JSON` to load a saved playbook.
-10. Use `PNG`, `PDF Play`, or `PDF Book` for sharing and printing.
+6. Click an offensive player instead of dragging to place route points one by one; press Enter or double-click to finish.
+7. Use Draw for freehand routes, or choose Curve/Drawn in Shape for smoother route paths.
+8. Select a player and click a preset button to add a common route instantly.
+9. Select a line to change its end cap, color, width, opacity, shape, or points.
+10. Add notes in `Play Notes`; they appear on the right side of the diagram.
+11. Use `Save As` to download a JSON playbook file.
+12. Use `Open JSON` to load a saved playbook.
+13. Use `PNG`, `PDF Play`, or `PDF Book` for sharing and printing.
+
+On phones, the field is shown first and the main drawing tools stay in the bottom dock. Detailed controls, playbook management, saving, and export actions are below the field.
 
 ## Tools
 
 - **Select**: Select, move, and edit items on the field
 - **Route**: Draw a standard route line
+- **Draw**: Draw a freehand route that is simplified and rendered smoothly
 - **Motion**: Draw a zigzag motion line
 - **Pass**: Draw a dashed pass line
 - **Block**: Draw a block line with a T end cap
@@ -94,4 +104,4 @@ This project is licensed under the MIT License.
 
 ## 日本語まとめ
 
-5vs5 フラッグフットボール用のプレイ作成ツールです。`index.html` をブラウザで開くだけで使えます。フォルダとプレイはドラッグで並べ替え・移動でき、空フォルダもOKです。線の色・太さ・透明度を変えられます。保存はJSON、出力はPNG、現在のプレイPDF、プレイブック全体PDFに対応しています。Safariでは直接上書き保存ができないため、`Save As` を使ってください。
+5vs5 フラッグフットボール用のプレイ作成ツールです。`index.html` をブラウザで開くだけで使えます。フォルダとプレイはドラッグで並べ替え・移動でき、空フォルダもOKです。線の色・太さ・透明度を変えられ、手描きルート、曲線ルート、クリック式の折れ点入力、よく使うルートプリセットにも対応しています。スマホではフィールドを先に表示し、画面下の固定ツールバーから主要ツールを操作できます。保存はJSON、出力はPNG、現在のプレイPDF、プレイブック全体PDFに対応しています。Safariでは直接上書き保存ができないため、`Save As` を使ってください。

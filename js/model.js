@@ -58,6 +58,11 @@ function syncLineStyleControls() {
   controls.lineOpacityValue.textContent = style.opacity.toFixed(2);
 }
 
+function syncRouteShapeControl() {
+  const route = activeRoute();
+  controls.routeShape.value = normalizeRouteMode(route?.mode || state.routeMode);
+}
+
 function syncPlaysetFileBadge() {
   const canWriteFile = Boolean(state.fileHandle);
   const hasFileSystemAccess = 'showSaveFilePicker' in window;
@@ -129,6 +134,7 @@ function currentPlaySnapshot() {
     playerMarks: normalizePlayerMarks(state.playerMarks),
     playerSize: state.playerSize,
     endCapSize: state.endCapSize,
+    routeMode: normalizeRouteMode(state.routeMode),
     routeStyle: normalizeRouteStyle(state.routeStyle),
     updatedAt: new Date().toISOString(),
     players: cloneData(state.players),
@@ -149,6 +155,7 @@ function normalizePlay(play) {
     playerMarks: normalizePlayerMarks(play.playerMarks || fallback.playerMarks),
     playerSize: normalizePlayerSize(play.playerSize ?? fallback.playerSize),
     endCapSize: normalizeEndCapSize(play.endCapSize ?? fallback.endCapSize),
+    routeMode: normalizeRouteMode(play.routeMode || fallback.routeMode),
     routeStyle: normalizeRouteStyle(play.routeStyle || fallback.routeStyle),
     updatedAt: play.updatedAt || '',
     players,
@@ -185,6 +192,11 @@ function normalizeRouteOpacity(opacity) {
   const value = Number(opacity);
   if (!Number.isFinite(value)) return ROUTE_STYLE.opacity;
   return clamp(value, ROUTE_STYLE.minOpacity, ROUTE_STYLE.maxOpacity);
+}
+
+function normalizeRouteMode(mode) {
+  const value = String(mode || 'straight');
+  return ROUTE_MODES.has(value) ? value : 'straight';
 }
 
 function normalizeRouteStyle(style = {}) {
@@ -238,7 +250,10 @@ function normalizeRoutes(routes) {
     return {
       ...route,
       ...style,
-      mode: 'straight'
+      type: route.type || 'route',
+      end: route.end || 'arrow',
+      mode: normalizeRouteMode(route.mode),
+      points: Array.isArray(route.points) ? route.points : []
     };
   });
 }
@@ -314,6 +329,7 @@ function applyPlay(play) {
   state.playerMarks = cloneData(normalized.playerMarks || {});
   state.playerSize = normalizePlayerSize(normalized.playerSize);
   state.endCapSize = normalizeEndCapSize(normalized.endCapSize);
+  state.routeMode = normalizeRouteMode(normalized.routeMode);
   state.routeStyle = normalizeRouteStyle(normalized.routeStyle);
   state.players = cloneData(normalized.players);
   state.defenders = cloneData(normalized.defenders);
@@ -339,6 +355,7 @@ function clearActivePlayView(label = 'No Play Selected') {
   state.playerMarks = {};
   state.playerSize = PLAYER_SIZE.default;
   state.endCapSize = END_CAP_SIZE.default;
+  state.routeMode = 'straight';
   state.routeStyle = cloneData(defaultPlay.routeStyle);
   state.players = [];
   state.defenders = [];

@@ -3,6 +3,11 @@ field.addEventListener('pointerdown', handlePointerDown);
 field.addEventListener('pointermove', handlePointerMove);
 field.addEventListener('pointerup', handlePointerUp);
 field.addEventListener('dblclick', (event) => {
+  if (state.routeDraft?.input === 'poly') {
+    event.preventDefault();
+    finishRoute();
+    return;
+  }
   const hit = targetFromEvent(event);
   if (hit?.kind === 'annotation') {
     selectThing('annotation', hit.id);
@@ -10,10 +15,18 @@ field.addEventListener('dblclick', (event) => {
   }
 });
 
+function syncToolButtons() {
+  document.querySelectorAll('.tool-button').forEach((button) => {
+    button.classList.toggle('is-active', button.dataset.tool === state.tool);
+  });
+}
+
 document.querySelectorAll('.tool-button').forEach((button) => {
   button.addEventListener('click', () => {
     state.tool = button.dataset.tool;
-    document.querySelectorAll('.tool-button').forEach((item) => item.classList.toggle('is-active', item === button));
+    state.pendingPreset = null;
+    syncToolButtons();
+    syncPresetButtons();
     setStatus(button.title);
   });
 });
@@ -66,6 +79,14 @@ controls.lineOpacity.addEventListener('input', () => {
   updateLineStyle({ opacity: controls.lineOpacity.value });
 });
 
+controls.routeShape.addEventListener('change', () => {
+  updateRouteMode(controls.routeShape.value);
+});
+
+document.querySelectorAll('[data-preset]').forEach((button) => {
+  button.addEventListener('click', () => activateRoutePreset(button.dataset.preset));
+});
+
 controls.playNotes.addEventListener('input', () => {
   state.notes = controls.playNotes.value;
   saveLocal(false);
@@ -102,7 +123,23 @@ document.querySelector('#pdfCurrentBtn').addEventListener('click', exportCurrent
 document.querySelector('#pdfBookBtn').addEventListener('click', exportPlaybookPdf);
 
 document.addEventListener('keydown', (event) => {
-  if ((event.key === 'Delete' || event.key === 'Backspace') && state.selectedId && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+  const isTextEditing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName);
+  if (state.routeDraft?.input === 'poly' && !isTextEditing) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      finishRoute();
+      return;
+    }
+    if (event.key === 'Backspace' || event.key === 'Delete') {
+      event.preventDefault();
+      if (state.routeDraft.points.length > 1) {
+        state.routeDraft.points.pop();
+        drawTemp();
+      }
+      return;
+    }
+  }
+  if ((event.key === 'Delete' || event.key === 'Backspace') && state.selectedId && !isTextEditing) {
     event.preventDefault();
     deleteSelectedItem();
   }
@@ -111,6 +148,7 @@ document.addEventListener('keydown', (event) => {
     state.drag = null;
     state.selectedId = null;
     state.selectedType = null;
+    state.pendingPreset = null;
     setStatus('準備OK');
     render();
   }

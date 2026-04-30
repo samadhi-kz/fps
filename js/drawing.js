@@ -4,7 +4,29 @@ function linePath(points) {
   return `M ${points[0][0]} ${points[0][1]} ` + points.slice(1).map((p) => `L ${p[0]} ${p[1]}`).join(' ');
 }
 
+function smoothPath(points) {
+  if (points.length < 3) return linePath(points);
+  const segments = [`M ${points[0][0]} ${points[0][1]}`];
+  for (let i = 0; i < points.length - 1; i += 1) {
+    const p0 = points[i - 1] || points[i];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = points[i + 2] || p2;
+    const cp1 = [
+      p1[0] + (p2[0] - p0[0]) / 6,
+      p1[1] + (p2[1] - p0[1]) / 6
+    ];
+    const cp2 = [
+      p2[0] - (p3[0] - p1[0]) / 6,
+      p2[1] - (p3[1] - p1[1]) / 6
+    ];
+    segments.push(`C ${cp1[0]} ${cp1[1]} ${cp2[0]} ${cp2[1]} ${p2[0]} ${p2[1]}`);
+  }
+  return segments.join(' ');
+}
+
 function zigzagPoints(points) {
+  if (points.length < 2) return points;
   const result = [points[0]];
   for (let i = 1; i < points.length; i += 1) {
     const a = points[i - 1];
@@ -12,20 +34,38 @@ function zigzagPoints(points) {
     const dx = b[0] - a[0];
     const dy = b[1] - a[1];
     const length = Math.hypot(dx, dy);
-    if (length < 20) {
+    if (length < 12) {
       result.push(b);
       continue;
     }
     const nx = -dy / length;
     const ny = dx / length;
-    const steps = Math.max(2, Math.floor(length / 22));
-    for (let j = 1; j <= steps; j += 1) {
+    const steps = Math.max(3, Math.ceil(length / 11));
+    for (let j = 1; j < steps; j += 1) {
       const t = j / steps;
-      const amp = j % 2 === 0 ? -10 : 10;
+      const amp = j % 2 === 0 ? -6 : 6;
       result.push([a[0] + dx * t + nx * amp, a[1] + dy * t + ny * amp]);
     }
+    result.push(b);
   }
   return result;
+}
+
+function displayPoints(route) {
+  if (route.input === 'poly' && route.previewPoint && route.points.length) {
+    const previous = route.points[route.points.length - 1];
+    if (Math.hypot(route.previewPoint[0] - previous[0], route.previewPoint[1] - previous[1]) > 3) {
+      return [...route.points, route.previewPoint];
+    }
+  }
+  return route.points;
+}
+
+function routePath(route) {
+  const points = displayPoints(route);
+  if (route.type === 'motion') return linePath(zigzagPoints(points));
+  if (route.mode === 'curve' || route.mode === 'draw') return smoothPath(points);
+  return linePath(points);
 }
 
 function endGeometry(points) {
@@ -116,6 +156,8 @@ function drawGrid() {
 
 function drawRouteEnd(group, route) {
   const scale = state.endCapSize;
+  const arrowScale = scale * 2;
+  const dotScale = scale * 1.5;
   const style = normalizeRouteStyle(route);
   const attrs = {
     stroke: style.color,
@@ -126,8 +168,8 @@ function drawRouteEnd(group, route) {
     const { end } = endGeometry(route.points);
     const prev = route.points[route.points.length - 2] || [end[0] - 1, end[1]];
     const angle = Math.atan2(end[1] - prev[1], end[0] - prev[0]);
-    const length = 30 * scale;
-    const spread = 15 * scale;
+    const length = 30 * arrowScale;
+    const spread = 15 * arrowScale;
     const x1 = end[0] - Math.cos(angle) * length + Math.cos(angle + Math.PI / 2) * spread;
     const y1 = end[1] - Math.sin(angle) * length + Math.sin(angle + Math.PI / 2) * spread;
     const x2 = end[0] - Math.cos(angle) * length - Math.cos(angle + Math.PI / 2) * spread;
@@ -146,7 +188,7 @@ function drawRouteEnd(group, route) {
       class: 'end-dot',
       cx: end[0],
       cy: end[1],
-      r: 11 * scale,
+      r: 11 * dotScale,
       fill: style.color,
       opacity: style.opacity
     }));
@@ -171,7 +213,7 @@ function drawRouteHandles(group, route) {
       class: 'route-handle',
       cx: point[0],
       cy: point[1],
-      r: 10,
+      r: 14,
       'data-id': route.id,
       'data-kind': 'route-point',
       'data-index': index
@@ -185,7 +227,7 @@ function drawRouteHandles(group, route) {
       class: 'route-insert',
       cx: (a[0] + b[0]) / 2,
       cy: (a[1] + b[1]) / 2,
-      r: 6,
+      r: 9,
       'data-id': route.id,
       'data-kind': 'route-insert',
       'data-index': i
@@ -197,11 +239,11 @@ function drawRoutes() {
   layers.routeHits.replaceChildren();
   layers.routes.replaceChildren();
   state.routes.forEach((route) => {
+    if (!route.points || route.points.length < 2) return;
     const selected = state.selectedType === 'route' && state.selectedId === route.id;
     const hitGroup = svgEl('g', { 'data-id': route.id, 'data-kind': 'route' });
     const group = svgEl('g');
-    const drawnPoints = route.type === 'motion' ? zigzagPoints(route.points) : route.points;
-    const d = linePath(drawnPoints);
+    const d = routePath(route);
     const style = normalizeRouteStyle(route);
 
     hitGroup.append(svgEl('path', { class: 'route-hit', d, 'stroke-width': Math.max(34, style.width + 24) }));
@@ -250,6 +292,7 @@ function drawPlayer(player, defender = false) {
     'data-id': player.id,
     'data-kind': defender ? 'defender' : 'player'
   });
+  group.append(svgEl('circle', { class: 'player-hit', cx: 0, cy: 0, r: size + 20 }));
   if (mark === 'ring') {
     group.append(svgEl('circle', { class: 'player-shape player-mark-ring-fill', cx: 0, cy: 0, r: size }));
   } else if (mark === 'star') {
@@ -328,17 +371,19 @@ function drawMeta() {
 function drawTemp() {
   layers.temp.replaceChildren();
   if (!state.routeDraft) return;
-  const drawnPoints = state.routeDraft.type === 'motion' ? zigzagPoints(state.routeDraft.points) : state.routeDraft.points;
+  const points = displayPoints(state.routeDraft);
+  if (points.length < 2) return;
+  const previewRoute = { ...state.routeDraft, points };
   const group = svgEl('g');
   const style = normalizeRouteStyle(state.routeDraft);
   group.append(svgEl('path', {
     class: `route ${state.routeDraft.type} is-selected`,
-    d: linePath(drawnPoints),
+    d: routePath(previewRoute),
     stroke: style.color,
     'stroke-width': style.width,
     opacity: style.opacity
   }));
-  if (state.routeDraft.points.length >= 2) drawRouteEnd(group, state.routeDraft);
+  drawRouteEnd(group, previewRoute);
   layers.temp.append(group);
 }
 
@@ -386,6 +431,7 @@ function render() {
   syncPlayerSizeControl();
   syncEndCapSizeControl();
   syncLineStyleControls();
+  syncRouteShapeControl();
   
   // Update arrow marker size
   const marker = field.querySelector('#routeArrow');
@@ -403,6 +449,7 @@ function render() {
   drawMarkControls();
   renderPlaybookSelectors();
   syncSelectionControls();
+  syncPresetButtons();
   syncPlaysetFileBadge();
 }
 

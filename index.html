@@ -11,7 +11,7 @@
       <aside class="sidebar">
         <header class="brand">
           <div>
-            <p class="eyebran">Flag Football 5 vs 5</p>
+            <p class="eyebrow">Flag Football 5 vs 5</p>
             <h1>Flag Play Studio</h1>
           </div>
           <button id="newPlayBtn" class="icon-button" type="button" title="New Play">+</button>
@@ -26,7 +26,7 @@
           <div id="playbookTree" class="playbook-tree" role="tree" aria-label="Playbook"></div>
         </section>
 
-        <section class="panel">
+        <section class="panel tools-panel">
           <div class="panel-title">Playset File</div>
           <div id="playsetFileName" class="file-badge">Save Location: Not Selected</div>
           <div id="playsetFileHint" class="file-hint">Open JSON or save with a name to enable overwrite save.</div>
@@ -43,6 +43,7 @@
           <div class="segmented" role="group" aria-label="Tools">
             <button class="tool-button is-active" type="button" data-tool="select" title="Select"><span class="tool-icon">↖</span><span>Select</span></button>
             <button class="tool-button" type="button" data-tool="route" title="Route"><span class="tool-icon">➜</span><span>Route</span></button>
+            <button class="tool-button" type="button" data-tool="draw" title="Draw"><span class="tool-icon">✎</span><span>Draw</span></button>
             <button class="tool-button" type="button" data-tool="motion" title="Motion"><span class="tool-icon">〰</span><span>Motion</span></button>
             <button class="tool-button" type="button" data-tool="pass" title="Pass"><span class="tool-icon">⋯</span><span>Pass</span></button>
             <button class="tool-button" type="button" data-tool="block" title="Block"><span class="tool-icon">⊣</span><span>Block</span></button>
@@ -58,6 +59,25 @@
                 <option value="dot">Dot</option>
               </select>
             </label>
+            <label>
+              <span>Shape</span>
+              <select id="routeShape">
+                <option value="straight">Straight</option>
+                <option value="curve">Curve</option>
+                <option value="draw">Drawn</option>
+              </select>
+            </label>
+          </div>
+          <div class="preset-grid" id="routePresets" aria-label="Route presets">
+            <button class="preset-button" type="button" data-preset="go">Go</button>
+            <button class="preset-button" type="button" data-preset="out">Out</button>
+            <button class="preset-button" type="button" data-preset="in">In</button>
+            <button class="preset-button" type="button" data-preset="slant">Slant</button>
+            <button class="preset-button" type="button" data-preset="post">Post</button>
+            <button class="preset-button" type="button" data-preset="corner">Corner</button>
+            <button class="preset-button" type="button" data-preset="curl">Curl</button>
+            <button class="preset-button" type="button" data-preset="motion">Motion</button>
+            <button class="preset-button" type="button" data-preset="block">Block</button>
           </div>
           <label class="check-row">
             <input id="snapToggle" type="checkbox">
@@ -87,6 +107,10 @@
             <input id="lineOpacity" type="range" min="0.2" max="1" step="0.05" value="1">
             <output id="lineOpacityValue" for="lineOpacity">1.00</output>
           </label>
+          <div class="action-row tool-actions">
+            <button id="flipBtn" class="wide-button" type="button">Flip H</button>
+            <button id="clearRoutesBtn" class="wide-button" type="button">Clear Lines</button>
+          </div>
         </section>
 
         <section class="panel">
@@ -107,10 +131,6 @@
         </section>
 
         <section class="panel">
-          <div class="action-row">
-            <button id="flipBtn" class="wide-button" type="button">Flip H</button>
-            <button id="clearRoutesBtn" class="wide-button" type="button">Clear Lines</button>
-          </div>
           <div class="action-row">
             <button id="deleteBtn" class="wide-button danger" type="button">Delete</button>
             <button id="exportPngBtn" class="wide-button" type="button">PNG</button>
@@ -153,6 +173,28 @@
         </div>
       </section>
     </main>
+    <nav class="mobile-dock" aria-label="Mobile drawing tools">
+      <div class="mobile-tool-row" role="group" aria-label="Tools">
+        <button class="tool-button is-active" type="button" data-tool="select" title="Select"><span class="tool-icon">↖</span><span>Select</span></button>
+        <button class="tool-button" type="button" data-tool="route" title="Route"><span class="tool-icon">➜</span><span>Route</span></button>
+        <button class="tool-button" type="button" data-tool="draw" title="Draw"><span class="tool-icon">✎</span><span>Draw</span></button>
+        <button class="tool-button" type="button" data-tool="motion" title="Motion"><span class="tool-icon">〰</span><span>Motion</span></button>
+        <button class="tool-button" type="button" data-tool="pass" title="Pass"><span class="tool-icon">⋯</span><span>Pass</span></button>
+        <button class="tool-button" type="button" data-tool="block" title="Block"><span class="tool-icon">⊣</span><span>Block</span></button>
+        <button class="tool-button" type="button" data-tool="text" title="etc"><span class="tool-icon">T</span><span>Comment</span></button>
+      </div>
+      <div class="mobile-preset-row" aria-label="Route presets">
+        <button class="preset-button" type="button" data-preset="go">Go</button>
+        <button class="preset-button" type="button" data-preset="out">Out</button>
+        <button class="preset-button" type="button" data-preset="in">In</button>
+        <button class="preset-button" type="button" data-preset="slant">Slant</button>
+        <button class="preset-button" type="button" data-preset="post">Post</button>
+        <button class="preset-button" type="button" data-preset="corner">Corner</button>
+        <button class="preset-button" type="button" data-preset="curl">Curl</button>
+        <button class="preset-button" type="button" data-preset="motion">Motion</button>
+        <button class="preset-button" type="button" data-preset="block">Block</button>
+      </div>
+    </nav>
     <div id="printBook" class="print-book" aria-hidden="true"></div>
 
     <script src="js/config.js"></script>

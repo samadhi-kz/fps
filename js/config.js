@@ -1,6 +1,6 @@
 // Shared constants, default data, global state, and DOM references.
 const SVG_NS = 'http://www.w3.org/2000/svg';
-const DRAW_TOOLS = ['route', 'motion', 'pass', 'block'];
+const DRAW_TOOLS = ['route', 'draw', 'motion', 'pass', 'block'];
 const PLAYBOOK_FORMAT_VERSION = 1;
 
 function cloneData(value) {
@@ -46,6 +46,18 @@ const ROUTE_STYLE = {
   minOpacity: 0.2,
   maxOpacity: 1
 };
+const ROUTE_MODES = new Set(['straight', 'curve', 'draw']);
+const ROUTE_PRESETS = [
+  { value: 'go', label: 'Go' },
+  { value: 'out', label: 'Out' },
+  { value: 'in', label: 'In' },
+  { value: 'slant', label: 'Slant' },
+  { value: 'post', label: 'Post' },
+  { value: 'corner', label: 'Corner' },
+  { value: 'curl', label: 'Curl' },
+  { value: 'motion', label: 'Motion' },
+  { value: 'block', label: 'Block' }
+];
 const PLAYER_LABELS = ['1', '2', '3', '4', '5'];
 const PLAYER_MARK_OPTIONS = [
   { value: 'ring', label: 'Light Blue Circle' },
@@ -68,6 +80,7 @@ const defaultPlay = {
   playerMarks: { '1': 'ring', '2': 'ring', '3': 'ring', '4': 'ring', '5': 'ring' },
   playerSize: PLAYER_SIZE.default,
   endCapSize: END_CAP_SIZE.default,
+  routeMode: 'straight',
   routeStyle: {
     color: ROUTE_STYLE.color,
     width: ROUTE_STYLE.width,
@@ -110,12 +123,14 @@ const state = {
   annotations: [],
   playerSize: PLAYER_SIZE.default,
   endCapSize: END_CAP_SIZE.default,
+  routeMode: 'straight',
   routeStyle: cloneData(defaultPlay.routeStyle),
   fileHandle: null,
   fileName: '',
   openFolderIds: new Set(),
   treeDrag: null,
   suppressTreeClick: false,
+  pendingPreset: null,
   printCleanup: null
 };
 
@@ -149,6 +164,8 @@ const controls = {
   lineWidthValue: document.querySelector('#lineWidthValue'),
   lineOpacity: document.querySelector('#lineOpacity'),
   lineOpacityValue: document.querySelector('#lineOpacityValue'),
+  routeShape: document.querySelector('#routeShape'),
+  routePresets: document.querySelector('#routePresets'),
   titleLabel: document.querySelector('#titleLabel'),
   markList: document.querySelector('#markList'),
   statusText: document.querySelector('#statusText'),
