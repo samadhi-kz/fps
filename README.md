@@ -4,6 +4,19 @@ Flag Play Studio 5vs5 is a static web app for drawing, organizing, saving, and e
 
 Open `index.html` in a browser and start designing. No build step or server is required.
 
+## Project Structure
+
+- `index.html`: App shell and SVG layer markup
+- `styles.css`: Layout, controls, field, and print styles
+- `js/config.js`: Constants, default play data, shared state, and DOM references
+- `js/model.js`: Data normalization, snapshots, active-play syncing, and initial state
+- `js/playbook-tree.js`: Playbook tree rendering, drag/drop, and tree event handlers
+- `js/drawing.js`: SVG geometry, field drawing, player marks, text, and render orchestration
+- `js/field-interactions.js`: Pointer interactions, line editing, selection deletion, flip, and clear actions
+- `js/files.js`: JSON load/save, PNG export, and PDF/print export
+- `js/playbook-actions.js`: Folder/play CRUD and selection behavior
+- `js/main.js`: Browser event binding and app startup
+
 ## Features
 
 - Draw 5-on-5 flag football plays on a field diagram

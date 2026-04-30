@@ -1,0 +1,417 @@
+// SVG geometry, field drawing, player marks, and render orchestration.
+function linePath(points) {
+  if (points.length < 2) return '';
+  return `M ${points[0][0]} ${points[0][1]} ` + points.slice(1).map((p) => `L ${p[0]} ${p[1]}`).join(' ');
+}
+
+function zigzagPoints(points) {
+  const result = [points[0]];
+  for (let i = 1; i < points.length; i += 1) {
+    const a = points[i - 1];
+    const b = points[i];
+    const dx = b[0] - a[0];
+    const dy = b[1] - a[1];
+    const length = Math.hypot(dx, dy);
+    if (length < 20) {
+      result.push(b);
+      continue;
+    }
+    const nx = -dy / length;
+    const ny = dx / length;
+    const steps = Math.max(2, Math.floor(length / 22));
+    for (let j = 1; j <= steps; j += 1) {
+      const t = j / steps;
+      const amp = j % 2 === 0 ? -10 : 10;
+      result.push([a[0] + dx * t + nx * amp, a[1] + dy * t + ny * amp]);
+    }
+  }
+  return result;
+}
+
+function endGeometry(points) {
+  const end = points[points.length - 1];
+  const prev = points[points.length - 2] || [end[0] - 1, end[1]];
+  const angle = Math.atan2(end[1] - prev[1], end[0] - prev[0]);
+  const nx = Math.cos(angle + Math.PI / 2);
+  const ny = Math.sin(angle + Math.PI / 2);
+  return { end, nx, ny };
+}
+
+function routeLength(points) {
+  return points.slice(1).reduce((total, point, index) => {
+    const previous = points[index];
+    return total + Math.hypot(point[0] - previous[0], point[1] - previous[1]);
+  }, 0);
+}
+
+function sanitizePoints(points) {
+  const cleaned = [];
+  points.forEach((point) => {
+    const next = clampPoint(point);
+    const previous = cleaned[cleaned.length - 1];
+    if (!previous || Math.hypot(next[0] - previous[0], next[1] - previous[1]) > 4) {
+      cleaned.push(next);
+    }
+  });
+  return cleaned;
+}
+
+function drawGrid() {
+  layers.grid.replaceChildren();
+  const { left, right, scrimmageY, yardScale, widthYards, gridStepYards, frontYards, backYards, xAxisGuides } = FIELD_DIMENSIONS;
+  const top = scrimmageY - frontYards * yardScale;
+  const bottom = scrimmageY + backYards * yardScale;
+  const xFromYards = (yards) => left + yards * yardScale;
+  const appendYardLabel = (text, x, y, vertical = false, anchor = 'start') => {
+    const label = svgEl('text', {
+      class: `yard-label${vertical ? ' vertical-yard-label' : ''}`,
+      x,
+      y,
+      'text-anchor': anchor
+    });
+    label.textContent = text;
+    layers.grid.append(label);
+  };
+
+  xAxisGuides.forEach((guide) => {
+    const x = xFromYards(guide.yards);
+    layers.grid.append(svgEl('line', {
+      class: 'yard-line vertical-yard-line',
+      x1: x,
+      y1: top,
+      x2: x,
+      y2: bottom
+    }));
+    // Position labels outside the field
+    if (guide.yards === 0) {
+      appendYardLabel(guide.label, x - 10, top + 22, true, 'end');
+    } else if (guide.yards === 25) {
+      appendYardLabel(guide.label, x + 10, top + 22, true, 'start');
+    } else {
+      appendYardLabel(guide.label, x + 4, top - 10, true);
+    }
+  });
+
+  [
+    { yards: -20, label: 'Front 20yd' },
+    { yards: -15, label: 'Front 15yd' },
+    { yards: -10, label: 'Front 10yd' },
+    { yards: -5, label: 'Front 5yd' },
+    { yards: 0, label: 'Scrimmage', los: true },
+    { yards: 5, label: 'Back 5yd' },
+    { yards: 10, label: 'Back 10yd' }
+  ].forEach((line) => {
+    const y = scrimmageY + line.yards * yardScale;
+    layers.grid.append(svgEl('line', {
+      class: line.los ? 'los' : 'yard-line horizontal-yard-line',
+      x1: left,
+      y1: y,
+      x2: right,
+      y2: y
+    }));
+    // Position labels outside the field on the left
+    appendYardLabel(line.label, left - 20, line.los ? y - 14 : y - 8, false, 'end');
+  });
+}
+
+function drawRouteEnd(group, route) {
+  const scale = state.endCapSize;
+  const style = normalizeRouteStyle(route);
+  const attrs = {
+    stroke: style.color,
+    'stroke-width': style.width,
+    opacity: style.opacity
+  };
+  if (route.end === 'arrow') {
+    const { end } = endGeometry(route.points);
+    const prev = route.points[route.points.length - 2] || [end[0] - 1, end[1]];
+    const angle = Math.atan2(end[1] - prev[1], end[0] - prev[0]);
+    const length = 30 * scale;
+    const spread = 15 * scale;
+    const x1 = end[0] - Math.cos(angle) * length + Math.cos(angle + Math.PI / 2) * spread;
+    const y1 = end[1] - Math.sin(angle) * length + Math.sin(angle + Math.PI / 2) * spread;
+    const x2 = end[0] - Math.cos(angle) * length - Math.cos(angle + Math.PI / 2) * spread;
+    const y2 = end[1] - Math.sin(angle) * length - Math.sin(angle + Math.PI / 2) * spread;
+    group.append(svgEl('path', {
+      class: 'end-arrow',
+      d: `M ${x1} ${y1} L ${end[0]} ${end[1]} L ${x2} ${y2}`,
+      ...attrs,
+      'stroke-width': Math.max(2.4, style.width * 0.45)
+    }));
+  }
+
+  if (route.end === 'dot') {
+    const { end } = endGeometry(route.points);
+    group.append(svgEl('circle', {
+      class: 'end-dot',
+      cx: end[0],
+      cy: end[1],
+      r: 11 * scale,
+      fill: style.color,
+      opacity: style.opacity
+    }));
+  }
+
+  if (route.end === 't') {
+    const { end, nx, ny } = endGeometry(route.points);
+    group.append(svgEl('line', {
+      class: 'end-t',
+      x1: end[0] - nx * 29 * scale,
+      y1: end[1] - ny * 29 * scale,
+      x2: end[0] + nx * 29 * scale,
+      y2: end[1] + ny * 29 * scale,
+      ...attrs
+    }));
+  }
+}
+
+function drawRouteHandles(group, route) {
+  route.points.forEach((point, index) => {
+    group.append(svgEl('circle', {
+      class: 'route-handle',
+      cx: point[0],
+      cy: point[1],
+      r: 10,
+      'data-id': route.id,
+      'data-kind': 'route-point',
+      'data-index': index
+    }));
+  });
+
+  for (let i = 0; i < route.points.length - 1; i += 1) {
+    const a = route.points[i];
+    const b = route.points[i + 1];
+    group.append(svgEl('circle', {
+      class: 'route-insert',
+      cx: (a[0] + b[0]) / 2,
+      cy: (a[1] + b[1]) / 2,
+      r: 6,
+      'data-id': route.id,
+      'data-kind': 'route-insert',
+      'data-index': i
+    }));
+  }
+}
+
+function drawRoutes() {
+  layers.routeHits.replaceChildren();
+  layers.routes.replaceChildren();
+  state.routes.forEach((route) => {
+    const selected = state.selectedType === 'route' && state.selectedId === route.id;
+    const hitGroup = svgEl('g', { 'data-id': route.id, 'data-kind': 'route' });
+    const group = svgEl('g');
+    const drawnPoints = route.type === 'motion' ? zigzagPoints(route.points) : route.points;
+    const d = linePath(drawnPoints);
+    const style = normalizeRouteStyle(route);
+
+    hitGroup.append(svgEl('path', { class: 'route-hit', d, 'stroke-width': Math.max(34, style.width + 24) }));
+    group.append(svgEl('path', {
+      class: `route ${route.type}${selected ? ' is-selected' : ''}`,
+      d,
+      stroke: style.color,
+      'stroke-width': style.width,
+      opacity: style.opacity
+    }));
+    drawRouteEnd(group, route);
+    if (selected) drawRouteHandles(group, route);
+    layers.routeHits.append(hitGroup);
+    layers.routes.append(group);
+  });
+}
+
+function starPath(cx, cy, outer = 48, inner = 23) {
+  const points = [];
+  for (let i = 0; i < 10; i += 1) {
+    const radius = i % 2 === 0 ? outer : inner;
+    const angle = -Math.PI / 2 + i * Math.PI / 5;
+    points.push(`${cx + Math.cos(angle) * radius},${cy + Math.sin(angle) * radius}`);
+  }
+  return points.join(' ');
+}
+
+function markLabel(mark) {
+  if (!mark) return '';
+  return PLAYER_MARK_OPTIONS.find((option) => option.value === mark)?.label || '';
+}
+
+function playerMark(player) {
+  if (!player || !state.playerMarks) return '';
+  return state.playerMarks[player.label] || '';
+}
+
+function drawPlayer(player, defender = false) {
+  const size = normalizePlayerSize(state.playerSize);
+  const selectedRing = size + 7;
+  const qbSize = size * 2;
+  const mark = defender ? '' : playerMark(player);
+  const group = svgEl('g', {
+    class: `player ${defender ? 'defender' : ''}`,
+    transform: `translate(${player.x} ${player.y})`,
+    'data-id': player.id,
+    'data-kind': defender ? 'defender' : 'player'
+  });
+  if (mark === 'ring') {
+    group.append(svgEl('circle', { class: 'player-shape player-mark-ring-fill', cx: 0, cy: 0, r: size }));
+  } else if (mark === 'star') {
+    group.append(svgEl('polygon', { class: 'player-shape player-target', points: starPath(0, 0, size * 1.26, size * 0.61) }));
+  } else if (mark === 'diamond') {
+    const diamondSize = size * 1.45;
+    group.append(svgEl('polygon', {
+      class: 'player-shape player-mark-diamond',
+      points: `0,-${diamondSize} ${diamondSize},0 0,${diamondSize} -${diamondSize},0`
+    }));
+  } else if (mark === 'square') {
+    group.append(svgEl('rect', { class: 'player-shape player-mark-square', x: -size, y: -size, width: size * 2, height: size * 2 }));
+  } else if (player.role === 'qb') {
+    group.append(svgEl('rect', { class: 'player-shape player-qb', x: -size, y: -size, width: qbSize, height: qbSize }));
+  } else {
+    group.append(svgEl('circle', { class: 'player-shape', cx: 0, cy: 0, r: size }));
+  }
+  if (state.selectedId === player.id) {
+    group.append(svgEl('circle', { class: 'selected-ring', cx: 0, cy: 0, r: selectedRing }));
+  }
+  group.append(svgEl('text', { class: 'player-text', x: 0, y: 3, style: `font-size: ${Math.max(11, size * 1.1)}px` }));
+  group.lastElementChild.textContent = player.label;
+  return group;
+}
+
+function drawPlayers() {
+  layers.defenders.replaceChildren();
+  layers.players.replaceChildren();
+  state.defenders.forEach((defender) => layers.defenders.append(drawPlayer(defender, true)));
+  state.players.forEach((player) => layers.players.append(drawPlayer(player, false)));
+}
+
+function appendMultilineText(textElement, text, x, lineHeight = 28) {
+  const lines = String(text || '').split(/\n/).slice(0, 5);
+  lines.forEach((line, index) => {
+    const tspan = svgEl('tspan', { x, dy: index === 0 ? 0 : lineHeight });
+    tspan.textContent = line;
+    textElement.append(tspan);
+  });
+}
+
+function drawText() {
+  layers.text.replaceChildren();
+  state.annotations.forEach((note) => {
+    const selected = state.selectedType === 'annotation' && state.selectedId === note.id;
+    const text = svgEl('text', {
+      class: `annotation${selected ? ' is-selected' : ''}`,
+      x: note.x,
+      y: note.y,
+      'data-id': note.id,
+      'data-kind': 'annotation'
+    });
+    appendMultilineText(text, note.text, note.x, 28);
+    layers.text.append(text);
+  });
+}
+
+function drawMeta() {
+  layers.meta.replaceChildren();
+  const metaX = 790;
+  const title = svgEl('text', { class: 'meta-title', x: metaX, y: 292 });
+  title.textContent = state.playName;
+  layers.meta.append(title);
+
+  if (state.notes) {
+    const notesLabel = svgEl('text', { class: 'meta-notes-label', x: metaX, y: 330 });
+    notesLabel.textContent = 'Play Notes';
+    layers.meta.append(notesLabel);
+
+    const notes = svgEl('text', { class: 'meta-notes', x: metaX, y: 356 });
+    appendMultilineText(notes, state.notes, metaX, 23);
+    layers.meta.append(notes);
+  }
+}
+
+function drawTemp() {
+  layers.temp.replaceChildren();
+  if (!state.routeDraft) return;
+  const drawnPoints = state.routeDraft.type === 'motion' ? zigzagPoints(state.routeDraft.points) : state.routeDraft.points;
+  const group = svgEl('g');
+  const style = normalizeRouteStyle(state.routeDraft);
+  group.append(svgEl('path', {
+    class: `route ${state.routeDraft.type} is-selected`,
+    d: linePath(drawnPoints),
+    stroke: style.color,
+    'stroke-width': style.width,
+    opacity: style.opacity
+  }));
+  if (state.routeDraft.points.length >= 2) drawRouteEnd(group, state.routeDraft);
+  layers.temp.append(group);
+}
+
+function drawMarkControls() {
+  controls.markList.replaceChildren();
+  state.players.forEach((player) => {
+    const item = document.createElement('label');
+    item.className = 'mark-item';
+    const badge = document.createElement('span');
+    const mark = playerMark(player);
+    badge.className = `mark-badge${mark ? ` is-${mark}` : ''}`;
+    badge.textContent = player.label;
+    const select = document.createElement('select');
+    PLAYER_MARK_OPTIONS.forEach((option) => {
+      const itemOption = document.createElement('option');
+      itemOption.value = option.value;
+      itemOption.textContent = option.label;
+      select.append(itemOption);
+    });
+    select.value = mark;
+    select.addEventListener('change', () => {
+      const nextMarks = normalizePlayerMarks({ ...state.playerMarks, [player.label]: select.value });
+      state.playerMarks = nextMarks;
+      saveLocal(false);
+      render();
+      setStatus(select.value ? `Player ${player.label}: ${markLabel(select.value)}` : `Player ${player.label}: No mark`);
+    });
+    item.append(badge, select);
+    controls.markList.append(item);
+  });
+}
+
+function syncSelectionControls() {
+  const selectedNote = state.selectedType === 'annotation'
+    ? state.annotations.find((note) => note.id === state.selectedId)
+    : null;
+  controls.selectionBadge.textContent = selectionLabel();
+  controls.selectedText.disabled = !selectedNote;
+  controls.selectedText.value = selectedNote?.text || '';
+}
+
+function render() {
+  controls.titleLabel.textContent = state.playName;
+  controls.snapToggle.checked = state.snap;
+  syncPlayerSizeControl();
+  syncEndCapSizeControl();
+  syncLineStyleControls();
+  
+  // Update arrow marker size
+  const marker = field.querySelector('#routeArrow');
+  if (marker) {
+    marker.setAttribute('markerWidth', 8 * state.endCapSize);
+    marker.setAttribute('markerHeight', 8 * state.endCapSize);
+  }
+  
+  drawGrid();
+  drawRoutes();
+  drawTemp();
+  drawPlayers();
+  drawText();
+  drawMeta();
+  drawMarkControls();
+  renderPlaybookSelectors();
+  syncSelectionControls();
+  syncPlaysetFileBadge();
+}
+
+function selectThing(type, id) {
+  state.selectedType = type;
+  state.selectedId = id;
+  if (type === 'route') {
+    const route = state.routes.find((item) => item.id === id);
+    if (route) controls.endCap.value = route.end;
+  }
+  render();
+}
