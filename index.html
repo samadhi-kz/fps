@@ -70,8 +70,22 @@
           </label>
           <label class="range-row" for="endCapSize">
             <span>End Cap Size</span>
-            <input id="endCapSize" type="after" min="0.5" max="2" step="0.1" value="1">
-            <output id="endCapSizeValue" for="endCapSize">1.0</output>
+            <input id="endCapSize" type="range" min="0.5" max="2" step="0.1" value="0.5">
+            <output id="endCapSizeValue" for="endCapSize">0.5</output>
+          </label>
+          <label class="color-row" for="lineColor">
+            <span>Line Color</span>
+            <input id="lineColor" type="color" value="#101010">
+          </label>
+          <label class="range-row" for="lineWidth">
+            <span>Line Width</span>
+            <input id="lineWidth" type="range" min="2" max="16" step="1" value="9">
+            <output id="lineWidthValue" for="lineWidth">9</output>
+          </label>
+          <label class="range-row" for="lineOpacity">
+            <span>Opacity</span>
+            <input id="lineOpacity" type="range" min="0.2" max="1" step="0.05" value="1">
+            <output id="lineOpacityValue" for="lineOpacity">1.00</output>
           </label>
         </section>
 
@@ -99,12 +113,11 @@
           </div>
           <div class="action-row">
             <button id="deleteBtn" class="wide-button danger" type="button">Delete</button>
-            <button id="saveBtn" class="wide-button" type="button">Save JSON</button>
+            <button id="exportPngBtn" class="wide-button" type="button">PNG</button>
           </div>
           <div class="action-row">
-            <button id="exportSvgBtn" class="wide-button" type="button">SVG</button>
-            <button id="exportJsonBtn" class="wide-button" type="button">Backup</button>
-            <button id="pdfBtn" class="wide-button primary" type="button">PDF</button>
+            <button id="pdfCurrentBtn" class="wide-button primary" type="button">PDF Play</button>
+            <button id="pdfBookBtn" class="wide-button primary" type="button">PDF Book</button>
           </div>
         </section>
       </aside>
@@ -129,15 +142,18 @@
             </defs>
             <rect class="field-bg" x="0" y="0" width="1000" height="720"></rect>
             <g id="gridLayer"></g>
+            <g id="routeHitLayer"></g>
+            <g id="defenderLayer"></g>
             <g id="routeLayer"></g>
             <g id="tempLayer"></g>
-            <g id="playerLayer"></g>
             <g id="textLayer"></g>
             <g id="metaLayer"></g>
+            <g id="playerLayer"></g>
           </svg>
         </div>
       </section>
     </main>
+    <div id="printBook" class="print-book" aria-hidden="true"></div>
 
     <script src="app.js"></script>
   </body>

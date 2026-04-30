@@ -27,9 +27,18 @@ const PLAYER_SIZE = {
   max: 35
 };
 const END_CAP_SIZE = {
-  default: 1,
+  default: 0.5,
   min: 0.5,
   max: 2
+};
+const ROUTE_STYLE = {
+  color: '#101010',
+  width: 9,
+  opacity: 1,
+  minWidth: 2,
+  maxWidth: 16,
+  minOpacity: 0.2,
+  maxOpacity: 1
 };
 const PLAYER_LABELS = ['1', '2', '3', '4', '5'];
 const PLAYER_MARK_OPTIONS = [
@@ -53,6 +62,11 @@ const defaultPlay = {
   playerMarks: { '1': 'ring', '2': 'ring', '3': 'ring', '4': 'ring', '5': 'ring' },
   playerSize: PLAYER_SIZE.default,
   endCapSize: END_CAP_SIZE.default,
+  routeStyle: {
+    color: ROUTE_STYLE.color,
+    width: ROUTE_STYLE.width,
+    opacity: ROUTE_STYLE.opacity
+  },
   players: [
     { id: 'p1', label: '1', x: fieldX(12.5), y: fieldY(0), role: 'qb' },
     { id: 'p2', label: '2', x: fieldX(12.5), y: fieldY(5), role: 'normal' },
@@ -90,14 +104,20 @@ const state = {
   annotations: [],
   playerSize: PLAYER_SIZE.default,
   endCapSize: END_CAP_SIZE.default,
+  routeStyle: cloneData(defaultPlay.routeStyle),
   fileHandle: null,
   fileName: '',
-  openFolderIds: new Set()
+  openFolderIds: new Set(),
+  treeDrag: null,
+  suppressTreeClick: false,
+  printCleanup: null
 };
 
 const field = document.querySelector('#field');
 const layers = {
   grid: document.querySelector('#gridLayer'),
+  routeHits: document.querySelector('#routeHitLayer'),
+  defenders: document.querySelector('#defenderLayer'),
   routes: document.querySelector('#routeLayer'),
   temp: document.querySelector('#tempLayer'),
   players: document.querySelector('#playerLayer'),
@@ -118,6 +138,11 @@ const controls = {
   playerSizeValue: document.querySelector('#playerSizeValue'),
   endCapSize: document.querySelector('#endCapSize'),
   endCapSizeValue: document.querySelector('#endCapSizeValue'),
+  lineColor: document.querySelector('#lineColor'),
+  lineWidth: document.querySelector('#lineWidth'),
+  lineWidthValue: document.querySelector('#lineWidthValue'),
+  lineOpacity: document.querySelector('#lineOpacity'),
+  lineOpacityValue: document.querySelector('#lineOpacityValue'),
   titleLabel: document.querySelector('#titleLabel'),
   markList: document.querySelector('#markList'),
   statusText: document.querySelector('#statusText'),
@@ -168,6 +193,26 @@ function syncEndCapSizeControl() {
   controls.endCapSizeValue.textContent = state.endCapSize.toFixed(1);
 }
 
+function activeRoute() {
+  if (state.selectedType !== 'route') return null;
+  return state.routes.find((route) => route.id === state.selectedId) || null;
+}
+
+function activeRouteStyle() {
+  return normalizeRouteStyle(activeRoute() || state.routeStyle);
+}
+
+function syncLineStyleControls() {
+  const style = activeRouteStyle();
+  controls.lineColor.value = style.color;
+  controls.lineWidth.value = style.width;
+  controls.lineWidthValue.value = style.width;
+  controls.lineWidthValue.textContent = style.width;
+  controls.lineOpacity.value = style.opacity;
+  controls.lineOpacityValue.value = style.opacity.toFixed(2);
+  controls.lineOpacityValue.textContent = style.opacity.toFixed(2);
+}
+
 function syncPlaysetFileBadge() {
   const canWriteFile = Boolean(state.fileHandle);
   const hasFileSystemAccess = 'showSaveFilePicker' in window;
@@ -176,14 +221,16 @@ function syncPlaysetFileBadge() {
     : 'Save Location: Not Selected';
   controls.playsetFileName.title = state.fileName ? state.fileName : 'Save Location Not Selected';
   controls.savePlaysetFileBtn.disabled = !canWriteFile;
-  controls.savePlaysetFileBtn.title = canWriteFile ? 'Overwrite the open JSON file' : 'Open a JSON file or save with a name first';
+  controls.savePlaysetFileBtn.title = canWriteFile
+    ? 'Overwrite the open JSON file'
+    : 'Direct overwrite is unavailable in this browser. Use Save As.';
 
   if (canWriteFile) {
     controls.playsetFileHint.textContent = 'Overwrite Save will write directly to this JSON file.';
   } else if (hasFileSystemAccess) {
     controls.playsetFileHint.textContent = 'To save with overwrite, open a JSON file or choose a save location with "Save As".';
   } else {
-    controls.playsetFileHint.textContent = 'This browser does not support direct overwrite, so export JSON with "Save As".';
+    controls.playsetFileHint.textContent = 'This browser cannot overwrite files directly. Use "Save As" to download a JSON file.';
   }
 }
 
@@ -237,6 +284,7 @@ function currentPlaySnapshot() {
     playerMarks: normalizePlayerMarks(state.playerMarks),
     playerSize: state.playerSize,
     endCapSize: state.endCapSize,
+    routeStyle: normalizeRouteStyle(state.routeStyle),
     updatedAt: new Date().toISOString(),
     players: cloneData(state.players),
     defenders: cloneData(state.defenders),
@@ -256,6 +304,7 @@ function normalizePlay(play) {
     playerMarks: normalizePlayerMarks(play.playerMarks || fallback.playerMarks),
     playerSize: normalizePlayerSize(play.playerSize ?? fallback.playerSize),
     endCapSize: normalizeEndCapSize(play.endCapSize ?? fallback.endCapSize),
+    routeStyle: normalizeRouteStyle(play.routeStyle || fallback.routeStyle),
     updatedAt: play.updatedAt || '',
     players,
     defenders: normalizeDefenders(play.defenders || fallback.defenders),
@@ -274,6 +323,31 @@ function normalizeEndCapSize(size) {
   const value = Number(size);
   if (!Number.isFinite(value)) return END_CAP_SIZE.default;
   return clamp(value, END_CAP_SIZE.min, END_CAP_SIZE.max);
+}
+
+function normalizeRouteColor(color) {
+  const value = String(color || '').trim();
+  return /^#[0-9a-f]{6}$/i.test(value) ? value.toLowerCase() : ROUTE_STYLE.color;
+}
+
+function normalizeRouteWidth(width) {
+  const value = Number(width);
+  if (!Number.isFinite(value)) return ROUTE_STYLE.width;
+  return clamp(Math.round(value), ROUTE_STYLE.minWidth, ROUTE_STYLE.maxWidth);
+}
+
+function normalizeRouteOpacity(opacity) {
+  const value = Number(opacity);
+  if (!Number.isFinite(value)) return ROUTE_STYLE.opacity;
+  return clamp(value, ROUTE_STYLE.minOpacity, ROUTE_STYLE.maxOpacity);
+}
+
+function normalizeRouteStyle(style = {}) {
+  return {
+    color: normalizeRouteColor(style.color),
+    width: normalizeRouteWidth(style.width),
+    opacity: normalizeRouteOpacity(style.opacity)
+  };
 }
 
 function normalizePlayerMarks(marks) {
@@ -314,10 +388,14 @@ function normalizeDefenders(defenders) {
 }
 
 function normalizeRoutes(routes) {
-  return cloneData(routes || []).map((route) => ({
-    ...route,
-    mode: 'straight'
-  }));
+  return cloneData(routes || []).map((route) => {
+    const style = normalizeRouteStyle(route);
+    return {
+      ...route,
+      ...style,
+      mode: 'straight'
+    };
+  });
 }
 
 function normalizePlaybook(playbook) {
@@ -339,15 +417,24 @@ function normalizePlaybook(playbook) {
   const folders = playbook.folders.map((folder, index) => ({
       id: folder.id || makeId('folder'),
       name: folder.name || `Folder ${index + 1}`,
-      plays: (folder.plays?.length ? folder.plays : [cloneData(defaultPlay)]).map(normalizePlay)
+      plays: Array.isArray(folder.plays) ? folder.plays.map(normalizePlay) : []
     }));
-  const activeFolderId = folders.some((folder) => folder.id === playbook.activeFolderId)
+  let activeFolderId = folders.some((folder) => folder.id === playbook.activeFolderId)
     ? playbook.activeFolderId
     : folders[0].id;
-  const folder = folders.find((item) => item.id === activeFolderId);
-  const activePlayId = folder.plays.some((play) => play.id === playbook.activePlayId)
+  let folder = folders.find((item) => item.id === activeFolderId);
+  let activePlayId = folder?.plays.some((play) => play.id === playbook.activePlayId)
     ? playbook.activePlayId
-    : folder.plays[0].id;
+    : folder?.plays[0]?.id || null;
+
+  if (!activePlayId) {
+    const firstPlayableFolder = folders.find((item) => item.plays.length);
+    if (firstPlayableFolder) {
+      activeFolderId = firstPlayableFolder.id;
+      folder = firstPlayableFolder;
+      activePlayId = folder.plays[0].id;
+    }
+  }
 
   return {
     formatVersion: PLAYBOOK_FORMAT_VERSION,
@@ -358,6 +445,7 @@ function normalizePlaybook(playbook) {
 }
 
 function updateActivePlay() {
+  if (!state.activePlayId) return;
   const folder = activeFolder();
   if (!folder) return;
   const play = currentPlaySnapshot();
@@ -381,6 +469,7 @@ function applyPlay(play) {
   state.playerMarks = cloneData(normalized.playerMarks || {});
   state.playerSize = normalizePlayerSize(normalized.playerSize);
   state.endCapSize = normalizeEndCapSize(normalized.endCapSize);
+  state.routeStyle = normalizeRouteStyle(normalized.routeStyle);
   state.players = cloneData(normalized.players);
   state.defenders = cloneData(normalized.defenders);
   state.routes = cloneData(normalized.routes);
@@ -393,6 +482,32 @@ function applyPlay(play) {
   controls.playNotes.value = state.notes;
   syncPlayerSizeControl();
   syncEndCapSizeControl();
+  syncLineStyleControls();
+  controls.playNotes.disabled = false;
+  render();
+}
+
+function clearActivePlayView(label = 'No Play Selected') {
+  state.activePlayId = null;
+  state.playName = label;
+  state.notes = '';
+  state.playerMarks = {};
+  state.playerSize = PLAYER_SIZE.default;
+  state.endCapSize = END_CAP_SIZE.default;
+  state.routeStyle = cloneData(defaultPlay.routeStyle);
+  state.players = [];
+  state.defenders = [];
+  state.routes = [];
+  state.annotations = [];
+  state.selectedId = null;
+  state.selectedType = null;
+  state.drag = null;
+  state.routeDraft = null;
+  controls.playNotes.value = '';
+  controls.playNotes.disabled = true;
+  syncPlayerSizeControl();
+  syncEndCapSizeControl();
+  syncLineStyleControls();
   render();
 }
 
@@ -401,7 +516,9 @@ function loadInitialState() {
   state.activeFolderId = state.playbook.activeFolderId;
   state.activePlayId = state.playbook.activePlayId;
   state.openFolderIds = new Set(state.playbook.folders.map((folder) => folder.id));
-  applyPlay(activePlay());
+  const play = activePlay();
+  if (play) applyPlay(play);
+  else clearActivePlayView('No Play Selected');
   syncPlaybookState();
   renderPlaybookSelectors();
   syncPlaysetFileBadge();
@@ -420,7 +537,6 @@ function treeActionButton(action, text, title, dataset = {}, danger = false) {
 
 function renderPlaybookSelectors() {
   controls.playbookTree.replaceChildren();
-  if (state.activeFolderId) state.openFolderIds.add(state.activeFolderId);
 
   state.playbook.folders.forEach((folder) => {
     const folderNode = document.createElement('div');
@@ -432,8 +548,11 @@ function renderPlaybookSelectors() {
     const folderRow = document.createElement('div');
     folderRow.className = `tree-row tree-folder-row${isActiveFolder ? ' is-folder-active' : ''}`;
     folderRow.dataset.folderId = folder.id;
+    folderRow.dataset.dragKind = 'folder';
+    folderRow.draggable = true;
     folderRow.setAttribute('role', 'treeitem');
     folderRow.setAttribute('aria-expanded', String(isOpen));
+    folderRow.title = 'Drag to reorder folder';
 
     const toggle = document.createElement('button');
     toggle.className = 'tree-toggle';
@@ -464,16 +583,26 @@ function renderPlaybookSelectors() {
     if (isOpen) {
       const children = document.createElement('div');
       children.className = 'tree-children';
+      if (!folder.plays.length) {
+        const empty = document.createElement('div');
+        empty.className = 'tree-empty';
+        empty.textContent = 'Empty';
+        children.append(empty);
+      }
       folder.plays.forEach((play) => {
         const isActivePlay = isActiveFolder && play.id === state.activePlayId;
         const playRow = document.createElement('div');
         playRow.className = `tree-row tree-play-row${isActivePlay ? ' is-active' : ''}`;
         playRow.dataset.folderId = folder.id;
         playRow.dataset.playId = play.id;
+        playRow.dataset.dragKind = 'play';
+        playRow.draggable = true;
         playRow.setAttribute('role', 'treeitem');
+        playRow.title = 'Drag to reorder play or move between folders';
 
         const spacer = document.createElement('span');
         spacer.className = 'tree-spacer';
+        spacer.textContent = '⋮';
 
         const playLabel = document.createElement('button');
         playLabel.className = 'tree-label tree-play-label';
@@ -619,9 +748,40 @@ function drawGrid() {
 
 function drawRouteEnd(group, route) {
   const scale = state.endCapSize;
+  const style = normalizeRouteStyle(route);
+  const attrs = {
+    stroke: style.color,
+    'stroke-width': style.width,
+    opacity: style.opacity
+  };
+  if (route.end === 'arrow') {
+    const { end } = endGeometry(route.points);
+    const prev = route.points[route.points.length - 2] || [end[0] - 1, end[1]];
+    const angle = Math.atan2(end[1] - prev[1], end[0] - prev[0]);
+    const length = 30 * scale;
+    const spread = 15 * scale;
+    const x1 = end[0] - Math.cos(angle) * length + Math.cos(angle + Math.PI / 2) * spread;
+    const y1 = end[1] - Math.sin(angle) * length + Math.sin(angle + Math.PI / 2) * spread;
+    const x2 = end[0] - Math.cos(angle) * length - Math.cos(angle + Math.PI / 2) * spread;
+    const y2 = end[1] - Math.sin(angle) * length - Math.sin(angle + Math.PI / 2) * spread;
+    group.append(svgEl('path', {
+      class: 'end-arrow',
+      d: `M ${x1} ${y1} L ${end[0]} ${end[1]} L ${x2} ${y2}`,
+      ...attrs,
+      'stroke-width': Math.max(2.4, style.width * 0.45)
+    }));
+  }
+
   if (route.end === 'dot') {
     const { end } = endGeometry(route.points);
-    group.append(svgEl('circle', { class: 'end-dot', cx: end[0], cy: end[1], r: 11 * scale }));
+    group.append(svgEl('circle', {
+      class: 'end-dot',
+      cx: end[0],
+      cy: end[1],
+      r: 11 * scale,
+      fill: style.color,
+      opacity: style.opacity
+    }));
   }
 
   if (route.end === 't') {
@@ -631,7 +791,8 @@ function drawRouteEnd(group, route) {
       x1: end[0] - nx * 29 * scale,
       y1: end[1] - ny * 29 * scale,
       x2: end[0] + nx * 29 * scale,
-      y2: end[1] + ny * 29 * scale
+      y2: end[1] + ny * 29 * scale,
+      ...attrs
     }));
   }
 }
@@ -665,21 +826,27 @@ function drawRouteHandles(group, route) {
 }
 
 function drawRoutes() {
+  layers.routeHits.replaceChildren();
   layers.routes.replaceChildren();
   state.routes.forEach((route) => {
     const selected = state.selectedType === 'route' && state.selectedId === route.id;
-    const group = svgEl('g', { 'data-id': route.id, 'data-kind': 'route' });
+    const hitGroup = svgEl('g', { 'data-id': route.id, 'data-kind': 'route' });
+    const group = svgEl('g');
     const drawnPoints = route.type === 'motion' ? zigzagPoints(route.points) : route.points;
     const d = linePath(drawnPoints);
+    const style = normalizeRouteStyle(route);
 
-    group.append(svgEl('path', { class: 'route-hit', d }));
+    hitGroup.append(svgEl('path', { class: 'route-hit', d, 'stroke-width': Math.max(34, style.width + 24) }));
     group.append(svgEl('path', {
       class: `route ${route.type}${selected ? ' is-selected' : ''}`,
       d,
-      'marker-end': route.end === 'arrow' ? 'url(#routeArrow)' : ''
+      stroke: style.color,
+      'stroke-width': style.width,
+      opacity: style.opacity
     }));
     drawRouteEnd(group, route);
     if (selected) drawRouteHandles(group, route);
+    layers.routeHits.append(hitGroup);
     layers.routes.append(group);
   });
 }
@@ -741,8 +908,9 @@ function drawPlayer(player, defender = false) {
 }
 
 function drawPlayers() {
+  layers.defenders.replaceChildren();
   layers.players.replaceChildren();
-  state.defenders.forEach((defender) => layers.players.append(drawPlayer(defender, true)));
+  state.defenders.forEach((defender) => layers.defenders.append(drawPlayer(defender, true)));
   state.players.forEach((player) => layers.players.append(drawPlayer(player, false)));
 }
 
@@ -773,13 +941,18 @@ function drawText() {
 
 function drawMeta() {
   layers.meta.replaceChildren();
-  const title = svgEl('text', { class: 'meta-title', x: 70, y: 668 });
+  const metaX = 790;
+  const title = svgEl('text', { class: 'meta-title', x: metaX, y: 292 });
   title.textContent = state.playName;
   layers.meta.append(title);
 
   if (state.notes) {
-    const notes = svgEl('text', { class: 'meta-notes', x: 560, y: 668 });
-    appendMultilineText(notes, state.notes, 560, 23);
+    const notesLabel = svgEl('text', { class: 'meta-notes-label', x: metaX, y: 330 });
+    notesLabel.textContent = 'Play Notes';
+    layers.meta.append(notesLabel);
+
+    const notes = svgEl('text', { class: 'meta-notes', x: metaX, y: 356 });
+    appendMultilineText(notes, state.notes, metaX, 23);
     layers.meta.append(notes);
   }
 }
@@ -788,11 +961,17 @@ function drawTemp() {
   layers.temp.replaceChildren();
   if (!state.routeDraft) return;
   const drawnPoints = state.routeDraft.type === 'motion' ? zigzagPoints(state.routeDraft.points) : state.routeDraft.points;
-  layers.temp.append(svgEl('path', {
+  const group = svgEl('g');
+  const style = normalizeRouteStyle(state.routeDraft);
+  group.append(svgEl('path', {
     class: `route ${state.routeDraft.type} is-selected`,
     d: linePath(drawnPoints),
-    'marker-end': state.routeDraft.end === 'arrow' ? 'url(#routeArrow)' : ''
+    stroke: style.color,
+    'stroke-width': style.width,
+    opacity: style.opacity
   }));
+  if (state.routeDraft.points.length >= 2) drawRouteEnd(group, state.routeDraft);
+  layers.temp.append(group);
 }
 
 function drawMarkControls() {
@@ -838,6 +1017,7 @@ function render() {
   controls.snapToggle.checked = state.snap;
   syncPlayerSizeControl();
   syncEndCapSizeControl();
+  syncLineStyleControls();
   
   // Update arrow marker size
   const marker = field.querySelector('#routeArrow');
@@ -869,10 +1049,11 @@ function selectThing(type, id) {
 }
 
 function routeDefaultsForTool(tool) {
-  if (tool === 'block') return { type: 'block', end: 't', mode: 'straight' };
-  if (tool === 'pass') return { type: 'pass', end: 'dot', mode: 'straight' };
-  if (tool === 'motion') return { type: 'motion', end: 'arrow', mode: 'straight' };
-  return { type: 'route', end: controls.endCap.value, mode: 'straight' };
+  const style = normalizeRouteStyle(state.routeStyle);
+  if (tool === 'block') return { type: 'block', end: 't', mode: 'straight', ...style };
+  if (tool === 'pass') return { type: 'pass', end: 'dot', mode: 'straight', ...style };
+  if (tool === 'motion') return { type: 'motion', end: 'arrow', mode: 'straight', ...style };
+  return { type: 'route', end: controls.endCap.value, mode: 'straight', ...style };
 }
 
 function startRoute(player, event) {
@@ -1077,19 +1258,61 @@ function cleanExportSvg(clone) {
   clone.insertBefore(style, clone.firstChild);
 }
 
-function exportSvg() {
-  saveLocal(false);
-  const clone = field.cloneNode(true);
-  cleanExportSvg(clone);
-  const source = new XMLSerializer().serializeToString(clone);
-  const blob = new Blob([source], { type: 'image/svg+xml' });
+function safeFileBase(name, fallback = 'play') {
+  return String(name || fallback).trim().replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ') || fallback;
+}
+
+function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `${state.playName || 'play'}.svg`;
+  link.download = filename;
+  document.body.append(link);
   link.click();
+  link.remove();
   URL.revokeObjectURL(url);
-  setStatus('Exporting SVG');
+}
+
+function cloneFieldForExport() {
+  const clone = field.cloneNode(true);
+  clone.removeAttribute('id');
+  clone.classList.add('field-export');
+  clone.setAttribute('width', '2000');
+  clone.setAttribute('height', '1440');
+  cleanExportSvg(clone);
+  return clone;
+}
+
+function exportPng() {
+  saveLocal(false);
+  const clone = cloneFieldForExport();
+  const source = new XMLSerializer().serializeToString(clone);
+  const blob = new Blob([source], { type: 'image/svg+xml;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const image = new Image();
+  image.onload = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 2000;
+    canvas.height = 1440;
+    const context = canvas.getContext('2d');
+    context.fillStyle = '#ffffff';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    URL.revokeObjectURL(url);
+    canvas.toBlob((pngBlob) => {
+      if (!pngBlob) {
+        setStatus('PNG Failed');
+        return;
+      }
+      downloadBlob(pngBlob, `${safeFileBase(state.playName)}.png`);
+      setStatus('PNG Exported');
+    }, 'image/png');
+  };
+  image.onerror = () => {
+    URL.revokeObjectURL(url);
+    setStatus('PNG Failed');
+  };
+  image.src = url;
 }
 
 function normalizeImportedPlaybook(data) {
@@ -1154,7 +1377,9 @@ async function loadPlaysetFromText(text, fileName = '', fileHandle = null) {
     state.fileHandle = fileHandle;
     state.fileName = fileName;
     state.openFolderIds = new Set(importedPlaybook.folders.map((folder) => folder.id));
-    applyPlay(activePlay());
+    const play = activePlay();
+    if (play) applyPlay(play);
+    else clearActivePlayView('No Play Selected');
     saveLocal(false);
     syncPlaysetFileBadge();
     setStatus(fileName ? `${fileName} Loaded` : 'Load Complete');
@@ -1204,13 +1429,14 @@ async function savePlaysetAs() {
 
   downloadPlaysetJson(suggestedName);
   state.fileHandle = null;
+  state.fileName = suggestedName;
   syncPlaysetFileBadge();
   setStatus('Exporting JSON');
 }
 
 async function savePlaysetFile() {
   if (!state.fileHandle) {
-    setStatus('Save Location Not Selected');
+    setStatus('Overwrite Unavailable');
     return;
   }
 
@@ -1224,18 +1450,74 @@ async function savePlaysetFile() {
   }
 }
 
-function exportJson() {
-  downloadPlaysetJson(state.fileName || 'flag-playbook.json');
-  setStatus('Backup');
-}
-
-function exportPdf() {
+function exportCurrentPdf() {
   saveLocal(false);
   state.selectedId = null;
   state.selectedType = null;
   render();
-  setStatus('PDF');
+  setStatus('PDF Play');
   window.print();
+}
+
+function playEntries() {
+  return state.playbook.folders.flatMap((folder) => (
+    folder.plays.map((play) => ({ folder, play }))
+  ));
+}
+
+function restoreActivePlay(folderId, playId) {
+  state.activeFolderId = folderId;
+  state.activePlayId = playId;
+  const play = activePlay();
+  if (play) applyPlay(play);
+  else clearActivePlayView(activeFolder()?.name ? `${activeFolder().name} Empty` : 'No Play Selected');
+}
+
+function cleanupPrintBook() {
+  if (state.printCleanup) {
+    state.printCleanup();
+    state.printCleanup = null;
+  }
+}
+
+function exportPlaybookPdf() {
+  saveLocal(false);
+  const entries = playEntries();
+  if (!entries.length) {
+    setStatus('No Plays');
+    return;
+  }
+
+  const savedFolderId = state.activeFolderId;
+  const savedPlayId = state.activePlayId;
+  const printBook = document.querySelector('#printBook');
+  printBook.replaceChildren();
+
+  entries.forEach(({ folder, play }) => {
+    state.activeFolderId = folder.id;
+    state.activePlayId = play.id;
+    applyPlay(play);
+    state.selectedId = null;
+    state.selectedType = null;
+    render();
+
+    const page = document.createElement('section');
+    page.className = 'print-page';
+    const heading = document.createElement('div');
+    heading.className = 'print-page-title';
+    heading.textContent = `${folder.name} / ${play.name || 'Untitled'}`;
+    page.append(heading, cloneFieldForExport());
+    printBook.append(page);
+  });
+
+  restoreActivePlay(savedFolderId, savedPlayId);
+  document.body.classList.add('is-printing-book');
+  state.printCleanup = () => {
+    document.body.classList.remove('is-printing-book');
+    printBook.replaceChildren();
+  };
+  setStatus('PDF Book');
+  window.requestAnimationFrame(() => window.print());
 }
 
 function folderById(folderId) {
@@ -1249,7 +1531,11 @@ function selectFolder(folderId) {
   state.activeFolderId = folder.id;
   state.openFolderIds.add(folder.id);
   const play = folder.plays.find((item) => item.id === state.activePlayId) || folder.plays[0];
-  if (!play) return;
+  if (!play) {
+    clearActivePlayView(`${folder.name} Empty`);
+    setStatus(`${folder.name} Empty`);
+    return;
+  }
   state.activePlayId = play.id;
   applyPlay(play);
   setStatus(folder.name);
@@ -1354,9 +1640,21 @@ function duplicateCurrentPlay() {
   duplicatePlayById();
 }
 
+function totalPlayCount() {
+  return state.playbook.folders.reduce((total, folder) => total + folder.plays.length, 0);
+}
+
+function firstPlayLocation(excludePlayId = '') {
+  for (const folder of state.playbook.folders) {
+    const play = folder.plays.find((item) => item.id !== excludePlayId);
+    if (play) return { folder, play };
+  }
+  return null;
+}
+
 function deletePlayById(folderId = state.activeFolderId, playId = state.activePlayId) {
   const folder = folderById(folderId);
-  if (!folder || folder.plays.length <= 1) {
+  if (!folder || totalPlayCount() <= 1) {
     setStatus('Last Play');
     return;
   }
@@ -1369,8 +1667,20 @@ function deletePlayById(folderId = state.activeFolderId, playId = state.activePl
 
   if (state.activeFolderId === folder.id && state.activePlayId === playId) {
     const nextPlay = folder.plays[Math.min(index, folder.plays.length - 1)];
-    state.activePlayId = nextPlay.id;
-    applyPlay(nextPlay);
+    if (nextPlay) {
+      state.activePlayId = nextPlay.id;
+      applyPlay(nextPlay);
+    } else {
+      const nextLocation = firstPlayLocation(playId);
+      if (nextLocation) {
+        state.activeFolderId = nextLocation.folder.id;
+        state.activePlayId = nextLocation.play.id;
+        state.openFolderIds.add(nextLocation.folder.id);
+        applyPlay(nextLocation.play);
+      } else {
+        clearActivePlayView(`${folder.name} Empty`);
+      }
+    }
     saveLocal(true);
   } else {
     saveLocal(true);
@@ -1398,9 +1708,21 @@ function deleteFolderById(folderId = state.activeFolderId) {
   if (state.activeFolderId === folder.id) {
     const nextFolder = state.playbook.folders[Math.min(index, state.playbook.folders.length - 1)];
     state.activeFolderId = nextFolder.id;
-    state.activePlayId = nextFolder.plays[0].id;
     state.openFolderIds.add(nextFolder.id);
-    applyPlay(nextFolder.plays[0]);
+    if (nextFolder.plays[0]) {
+      state.activePlayId = nextFolder.plays[0].id;
+      applyPlay(nextFolder.plays[0]);
+    } else {
+      const nextLocation = firstPlayLocation();
+      if (nextLocation) {
+        state.activeFolderId = nextLocation.folder.id;
+        state.activePlayId = nextLocation.play.id;
+        state.openFolderIds.add(nextLocation.folder.id);
+        applyPlay(nextLocation.play);
+      } else {
+        clearActivePlayView(`${nextFolder.name} Empty`);
+      }
+    }
   } else {
     render();
   }
@@ -1453,7 +1775,222 @@ function clearRoutes() {
   render();
 }
 
+function updateLineStyle(partialStyle) {
+  const route = activeRoute();
+  if (route) {
+    Object.assign(route, normalizeRouteStyle({ ...route, ...partialStyle }));
+    saveLocal(false);
+    drawRoutes();
+    syncLineStyleControls();
+    setStatus('Line Style');
+    return;
+  }
+
+  state.routeStyle = normalizeRouteStyle({ ...state.routeStyle, ...partialStyle });
+  saveLocal(false);
+  drawTemp();
+  syncLineStyleControls();
+  setStatus('Line Default');
+}
+
+function clearTreeDropIndicators(includeDragging = false) {
+  controls.playbookTree.querySelectorAll('.is-drop-before, .is-drop-after, .is-drop-into')
+    .forEach((row) => row.classList.remove('is-drop-before', 'is-drop-after', 'is-drop-into'));
+  if (includeDragging) {
+    controls.playbookTree.querySelectorAll('.is-dragging')
+      .forEach((row) => row.classList.remove('is-dragging'));
+  }
+}
+
+function treePayloadFromRow(row) {
+  if (!row?.dataset.dragKind) return null;
+  return {
+    kind: row.dataset.dragKind,
+    folderId: row.dataset.folderId,
+    playId: row.dataset.playId || null
+  };
+}
+
+function dropPositionForRow(event, row) {
+  const rect = row.getBoundingClientRect();
+  return event.clientY < rect.top + rect.height / 2 ? 'before' : 'after';
+}
+
+function folderRowForTreeRow(row) {
+  if (row.classList.contains('tree-folder-row')) return row;
+  return row.closest('.tree-folder')?.querySelector('.tree-folder-row') || null;
+}
+
+function treeDropTargetFromEvent(event) {
+  const drag = state.treeDrag;
+  if (!drag) return null;
+
+  let row = event.target.closest('.tree-row');
+  if (!row) row = event.target.closest('.tree-empty')?.closest('.tree-folder')?.querySelector('.tree-folder-row');
+  if (!row || !controls.playbookTree.contains(row)) return null;
+
+  if (drag.kind === 'folder') {
+    const folderRow = folderRowForTreeRow(row);
+    if (!folderRow || folderRow.dataset.folderId === drag.folderId) return null;
+    return {
+      kind: 'folder',
+      row: folderRow,
+      folderId: folderRow.dataset.folderId,
+      position: dropPositionForRow(event, folderRow)
+    };
+  }
+
+  if (drag.kind === 'play') {
+    if (row.classList.contains('tree-folder-row')) {
+      return {
+        kind: 'folder',
+        row,
+        folderId: row.dataset.folderId,
+        position: 'inside'
+      };
+    }
+
+    if (row.classList.contains('tree-play-row') && row.dataset.playId !== drag.playId) {
+      return {
+        kind: 'play',
+        row,
+        folderId: row.dataset.folderId,
+        playId: row.dataset.playId,
+        position: dropPositionForRow(event, row)
+      };
+    }
+  }
+
+  return null;
+}
+
+function markTreeDropTarget(target) {
+  if (!target) return;
+  if (target.position === 'before') target.row.classList.add('is-drop-before');
+  else if (target.position === 'after') target.row.classList.add('is-drop-after');
+  else target.row.classList.add('is-drop-into');
+}
+
+function suppressTreeClickAfterDrop() {
+  state.suppressTreeClick = true;
+  window.setTimeout(() => {
+    state.suppressTreeClick = false;
+  }, 0);
+}
+
+function moveFolderByDrop(drag, target) {
+  const folders = state.playbook.folders;
+  const fromIndex = folders.findIndex((folder) => folder.id === drag.folderId);
+  if (fromIndex === -1 || drag.folderId === target.folderId) return;
+
+  saveLocal(false);
+  const [folder] = folders.splice(fromIndex, 1);
+  const targetIndex = folders.findIndex((item) => item.id === target.folderId);
+  if (targetIndex === -1) {
+    folders.splice(fromIndex, 0, folder);
+    return;
+  }
+
+  folders.splice(target.position === 'after' ? targetIndex + 1 : targetIndex, 0, folder);
+  saveLocal(true);
+  setStatus('Folder Moved');
+}
+
+function movePlayByDrop(drag, target) {
+  const sourceFolder = folderById(drag.folderId);
+  const targetFolder = folderById(target.folderId);
+  if (!sourceFolder || !targetFolder) return;
+
+  saveLocal(false);
+  const fromIndex = sourceFolder.plays.findIndex((play) => play.id === drag.playId);
+  if (fromIndex === -1) return;
+
+  const [play] = sourceFolder.plays.splice(fromIndex, 1);
+  let insertIndex = targetFolder.plays.length;
+  if (target.kind === 'play') {
+    const targetIndex = targetFolder.plays.findIndex((item) => item.id === target.playId);
+    if (targetIndex !== -1) insertIndex = target.position === 'after' ? targetIndex + 1 : targetIndex;
+  }
+
+  targetFolder.plays.splice(insertIndex, 0, play);
+  state.openFolderIds.add(targetFolder.id);
+  const movedActivePlay = state.activePlayId === play.id;
+  const movedIntoActiveEmptyFolder = !state.activePlayId && state.activeFolderId === targetFolder.id;
+  if (movedIntoActiveEmptyFolder) {
+    state.activeFolderId = targetFolder.id;
+    state.activePlayId = play.id;
+    applyPlay(play);
+    saveLocal(true);
+    setStatus(sourceFolder === targetFolder ? 'Play Reordered' : 'Play Moved');
+    return;
+  }
+
+  if (movedActivePlay) state.activeFolderId = targetFolder.id;
+
+  saveLocal(true);
+  render();
+  setStatus(sourceFolder === targetFolder ? 'Play Reordered' : 'Play Moved');
+}
+
+function handlePlaybookTreeDragStart(event) {
+  const row = event.target.closest('.tree-row[draggable="true"]');
+  if (!row || !controls.playbookTree.contains(row) || event.target.closest('.tree-action, .tree-toggle')) {
+    event.preventDefault();
+    return;
+  }
+
+  state.treeDrag = treePayloadFromRow(row);
+  if (!state.treeDrag) {
+    event.preventDefault();
+    return;
+  }
+
+  row.classList.add('is-dragging');
+  event.dataTransfer.effectAllowed = 'move';
+  event.dataTransfer.setData('text/plain', JSON.stringify(state.treeDrag));
+}
+
+function handlePlaybookTreeDragOver(event) {
+  if (!state.treeDrag) return;
+  const target = treeDropTargetFromEvent(event);
+  clearTreeDropIndicators();
+  if (!target) return;
+
+  event.preventDefault();
+  event.dataTransfer.dropEffect = 'move';
+  markTreeDropTarget(target);
+}
+
+function handlePlaybookTreeDrop(event) {
+  if (!state.treeDrag) return;
+  const drag = state.treeDrag;
+  const target = treeDropTargetFromEvent(event);
+  clearTreeDropIndicators(true);
+  state.treeDrag = null;
+  if (!target) return;
+
+  event.preventDefault();
+  suppressTreeClickAfterDrop();
+  if (drag.kind === 'folder') moveFolderByDrop(drag, target);
+  if (drag.kind === 'play') movePlayByDrop(drag, target);
+}
+
+function handlePlaybookTreeDragEnd() {
+  clearTreeDropIndicators(true);
+  state.treeDrag = null;
+}
+
+function handlePlaybookTreeDragLeave(event) {
+  if (!controls.playbookTree.contains(event.relatedTarget)) clearTreeDropIndicators();
+}
+
 function handlePlaybookTreeClick(event) {
+  if (state.suppressTreeClick) {
+    event.preventDefault();
+    state.suppressTreeClick = false;
+    return;
+  }
+
   const button = event.target.closest('[data-playbook-action]');
   if (!button || !controls.playbookTree.contains(button)) return;
   const { playbookAction, folderId, playId } = button.dataset;
@@ -1507,6 +2044,11 @@ document.querySelectorAll('.tool-button').forEach((button) => {
 
 controls.playbookTree.addEventListener('click', handlePlaybookTreeClick);
 controls.playbookTree.addEventListener('dblclick', handlePlaybookTreeDoubleClick);
+controls.playbookTree.addEventListener('dragstart', handlePlaybookTreeDragStart);
+controls.playbookTree.addEventListener('dragover', handlePlaybookTreeDragOver);
+controls.playbookTree.addEventListener('drop', handlePlaybookTreeDrop);
+controls.playbookTree.addEventListener('dragend', handlePlaybookTreeDragEnd);
+controls.playbookTree.addEventListener('dragleave', handlePlaybookTreeDragLeave);
 
 controls.endCap.addEventListener('change', () => {
   if (state.selectedType !== 'route') return;
@@ -1534,6 +2076,18 @@ controls.endCapSize.addEventListener('input', () => {
   syncEndCapSizeControl();
   saveLocal(false);
   drawRoutes();
+});
+
+controls.lineColor.addEventListener('input', () => {
+  updateLineStyle({ color: controls.lineColor.value });
+});
+
+controls.lineWidth.addEventListener('input', () => {
+  updateLineStyle({ width: controls.lineWidth.value });
+});
+
+controls.lineOpacity.addEventListener('input', () => {
+  updateLineStyle({ opacity: controls.lineOpacity.value });
 });
 
 controls.playNotes.addEventListener('input', () => {
@@ -1564,13 +2118,12 @@ document.querySelector('#newPlayInFolderBtn').addEventListener('click', () => cr
 document.querySelector('#deleteBtn').addEventListener('click', deleteSelectedItem);
 document.querySelector('#flipBtn').addEventListener('click', flipPlay);
 document.querySelector('#clearRoutesBtn').addEventListener('click', clearRoutes);
-document.querySelector('#saveBtn').addEventListener('click', () => downloadPlaysetJson(state.fileName || 'flag-playbook.json'));
 document.querySelector('#openPlaysetBtn').addEventListener('click', openPlaysetFile);
 document.querySelector('#savePlaysetFileBtn').addEventListener('click', savePlaysetFile);
 document.querySelector('#savePlaysetAsBtn').addEventListener('click', savePlaysetAs);
-document.querySelector('#exportSvgBtn').addEventListener('click', exportSvg);
-document.querySelector('#exportJsonBtn').addEventListener('click', exportJson);
-document.querySelector('#pdfBtn').addEventListener('click', exportPdf);
+document.querySelector('#exportPngBtn').addEventListener('click', exportPng);
+document.querySelector('#pdfCurrentBtn').addEventListener('click', exportCurrentPdf);
+document.querySelector('#pdfBookBtn').addEventListener('click', exportPlaybookPdf);
 
 document.addEventListener('keydown', (event) => {
   if ((event.key === 'Delete' || event.key === 'Backspace') && state.selectedId && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
@@ -1593,5 +2146,6 @@ document.addEventListener('keydown', (event) => {
 });
 
 window.addEventListener('afterprint', () => setStatus('準備OK'));
+window.addEventListener('afterprint', cleanupPrintBook);
 
 loadInitialState();
