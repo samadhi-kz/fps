@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Flag Play Studio</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <aside class="sidebar">
+        <header class="brand">
+          <div>
+            <p class="eyebran">Flag Football 5 vs 5</p>
+            <h1>Flag Play Studio</h1>
+          </div>
+          <button id="newPlayBtn" class="icon-button" type="button" title="New Play">+</button>
+        </header>
+
+        <section class="panel playbook-panel">
+          <div class="panel-title">Playbook</div>
+          <div class="action-row">
+            <button id="newFolderBtn" class="wide-button" type="button">+ Folder</button>
+            <button id="newPlayInFolderBtn" class="wide-button" type="button">+ Play</button>
+          </div>
+          <div id="playbookTree" class="playbook-tree" role="tree" aria-label="Playbook"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title">Playset File</div>
+          <div id="playsetFileName" class="file-badge">Save Location: Not Selected</div>
+          <div id="playsetFileHint" class="file-hint">Open JSON or save with a name to enable overwrite save.</div>
+          <input id="playsetFileInput" class="visually-hidden" type="file" accept=".json,application/json">
+          <div class="action-row">
+            <button id="openPlaysetBtn" class="wide-button" type="button">Open JSON</button>
+            <button id="savePlaysetFileBtn" class="wide-button primary" type="button">Overwrite Save</button>
+          </div>
+          <button id="savePlaysetAsBtn" class="wide-button" type="button">Save As</button>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title">Tools</div>
+          <div class="segmented" role="group" aria-label="Tools">
+            <button class="tool-button is-active" type="button" data-tool="select" title="Select"><span class="tool-icon">↖</span><span>Select</span></button>
+            <button class="tool-button" type="button" data-tool="route" title="Route"><span class="tool-icon">➜</span><span>Route</span></button>
+            <button class="tool-button" type="button" data-tool="motion" title="Motion"><span class="tool-icon">〰</span><span>Motion</span></button>
+            <button class="tool-button" type="button" data-tool="pass" title="Pass"><span class="tool-icon">⋯</span><span>Pass</span></button>
+            <button class="tool-button" type="button" data-tool="block" title="Block"><span class="tool-icon">⊣</span><span>Block</span></button>
+            <button class="tool-button" type="button" data-tool="text" title="etc"><span class="tool-icon">T</span><span>Comment</span></button>
+          </div>
+
+          <div class="control-grid">
+            <label>
+              <span>End Cap</span>
+              <select id="endCap">
+                <option value="arrow">Arrow</option>
+                <option value="t">T</option>
+                <option value="dot">Dot</option>
+              </select>
+            </label>
+          </div>
+          <label class="check-row">
+            <input id="snapToggle" type="checkbox">
+            <span>Snap</span>
+          </label>
+          <label class="range-row" for="playerSize">
+            <span>Player Size</span>
+            <input id="playerSize" type="range" min="5" max="35" step="1" value="25">
+            <output id="playerSizeValue" for="playerSize">25</output>
+          </label>
+          <label class="range-row" for="endCapSize">
+            <span>End Cap Size</span>
+            <input id="endCapSize" type="after" min="0.5" max="2" step="0.1" value="1">
+            <output id="endCapSizeValue" for="endCapSize">1.0</output>
+          </label>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title">Selection</div>
+          <div id="selectionBadge" class="selection-badge">Not Selected</div>
+          <label class="field-label" for="selectedText">Comment</label>
+          <textarea id="selectedText" class="text-area" rows="3" placeholder="Select a comment" disabled></textarea>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title">Play Notes</div>
+          <textarea id="playNotes" class="text-area" rows="3" placeholder="Notes"></textarea>
+        </section>
+
+        <section class="panel marks">
+          <div class="panel-to">Marks</div>
+          <div id="markList" class="mark-list"></div>
+        </section>
+
+        <section class="panel">
+          <div class="action-row">
+            <button id="flipBtn" class="wide-button" type="button">Flip H</button>
+            <button id="clearRoutesBtn" class="wide-button" type="button">Clear Lines</button>
+          </div>
+          <div class="action-row">
+            <button id="deleteBtn" class="wide-button danger" type="button">Delete</button>
+            <button id="saveBtn" class="wide-button" type="button">Save JSON</button>
+          </div>
+          <div class="action-row">
+            <button id="exportSvgBtn" class="wide-button" type="button">SVG</button>
+            <button id="exportJsonBtn" class="wide-button" type="button">Backup</button>
+            <button id="pdfBtn" class="wide-button primary" type="button">PDF</button>
+          </div>
+        </section>
+      </aside>
+
+      <section class="workspace">
+        <div class="topbar">
+          <div>
+            <h2 id="titleLabel">New Play</h2>
+          </div>
+          <div id="statusText" class="status">Ready</div>
+        </div>
+
+        <div class="canvas-wrap">
+          <svg id="field" viewBox="0 0 1000 720" role="img" aria-label="Flag Football Play Diagram">
+            <defs>
+              <marker id="routeArrow" viewBox="0 0 14 14" refX="12" refY="7" markerWidth="8" markerHeight="8" orient="auto">
+                <path d="M2 2 L12 7 L2 12" fill="none" stroke="#101010" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path>
+              </marker>
+              <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#111" flood-opacity=".18"></feDropShadow>
+              </filter>
+            </defs>
+            <rect class="field-bg" x="0" y="0" width="1000" height="720"></rect>
+            <g id="gridLayer"></g>
+            <g id="routeLayer"></g>
+            <g id="tempLayer"></g>
+            <g id="playerLayer"></g>
+            <g id="textLayer"></g>
+            <g id="metaLayer"></g>
+          </svg>
+        </div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
