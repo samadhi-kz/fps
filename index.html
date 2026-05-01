@@ -38,6 +38,21 @@
           <button id="savePlaysetAsBtn" class="wide-button" type="button">Save As</button>
         </section>
 
+        <section class="panel formation-panel">
+          <div class="panel-title">Offense Formation</div>
+          <div class="formation-grid" aria-label="Offense formations">
+            <button class="formation-button" type="button" data-formation="singleBack">Single back</button>
+            <button class="formation-button" type="button" data-formation="spread">Spread</button>
+            <button class="formation-button" type="button" data-formation="twins">Twins</button>
+            <button class="formation-button" type="button" data-formation="twinsStack">Twins stack</button>
+            <button class="formation-button" type="button" data-formation="trips">Trips</button>
+            <button class="formation-button" type="button" data-formation="bunch">Bunch</button>
+            <button class="formation-button" type="button" data-formation="tight">Tight</button>
+            <button class="formation-button" type="button" data-formation="doubleBack">Double back</button>
+            <button class="formation-button" type="button" data-formation="iFormation">I formation</button>
+          </div>
+        </section>
+
         <section class="panel drawing-tools-panel">
           <div class="panel-title">Tools</div>
           <div class="segmented" role="group" aria-label="Tools">
@@ -88,6 +103,10 @@
             <input id="snapToggle" type="checkbox">
             <span>Snap</span>
           </label>
+          <label class="check-row">
+            <input id="defenseToggle" type="checkbox" checked>
+            <span>Defense</span>
+          </label>
           <label class="range-row" for="playerSize">
             <span>Player Size</span>
             <input id="playerSize" type="range" min="5" max="35" step="1" value="25">
@@ -104,8 +123,8 @@
           </label>
           <label class="range-row" for="lineWidth">
             <span>Line Width</span>
-            <input id="lineWidth" type="range" min="2" max="16" step="1" value="9">
-            <output id="lineWidthValue" for="lineWidth">9</output>
+            <input id="lineWidth" type="range" min="2" max="16" step="1" value="5">
+            <output id="lineWidthValue" for="lineWidth">5</output>
           </label>
           <label class="range-row" for="lineOpacity">
             <span>Opacity</span>

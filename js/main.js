@@ -60,6 +60,17 @@ controls.snapToggle.addEventListener('change', () => {
   setStatus(state.snap ? 'Snap ON' : 'Snap OFF');
 });
 
+controls.defenseToggle.addEventListener('change', () => {
+  state.defenseVisible = controls.defenseToggle.checked;
+  if (!state.defenseVisible && state.selectedType === 'defender') {
+    state.selectedId = null;
+    state.selectedType = null;
+  }
+  saveLocal(false);
+  render();
+  setStatus(state.defenseVisible ? 'Defense ON' : 'Defense OFF');
+});
+
 controls.playerSize.addEventListener('input', () => {
   state.playerSize = normalizePlayerSize(controls.playerSize.value);
   syncPlayerSizeControl();
@@ -92,6 +103,10 @@ controls.routeShape.addEventListener('change', () => {
 
 document.querySelectorAll('[data-preset]').forEach((button) => {
   button.addEventListener('click', () => activateRoutePreset(button.dataset.preset));
+});
+
+document.querySelectorAll('[data-formation]').forEach((button) => {
+  button.addEventListener('click', () => applyOffenseFormation(button.dataset.formation));
 });
 
 controls.playNotes.addEventListener('input', () => {

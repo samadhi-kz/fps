@@ -300,11 +300,14 @@ function drawPlayer(player, defender = false) {
   const hitPadding = needsLargeTouchTargets() ? 30 : 20;
   const mark = defender ? '' : playerMark(player);
   const group = svgEl('g', {
-    class: `player ${defender ? 'defender' : ''}`,
+    class: `player ${defender ? 'defender' : `player-role-${player.role || 'normal'}`}`,
     transform: `translate(${player.x} ${player.y})`,
     'data-id': player.id,
     'data-kind': defender ? 'defender' : 'player'
   });
+  const title = svgEl('title');
+  title.textContent = defender ? 'Defense X' : `${player.label} ${playerRoleLabel(player.label)}`;
+  group.append(title);
   group.append(svgEl('circle', { class: 'player-hit', cx: 0, cy: 0, r: size + hitPadding }));
   if (mark === 'ring') {
     group.append(svgEl('circle', { class: 'player-shape player-mark-ring-fill', cx: 0, cy: 0, r: size }));
@@ -334,12 +337,73 @@ function drawPlayer(player, defender = false) {
 function drawPlayers() {
   layers.defenders.replaceChildren();
   layers.players.replaceChildren();
-  state.defenders.forEach((defender) => layers.defenders.append(drawPlayer(defender, true)));
+  if (state.defenseVisible) {
+    state.defenders.forEach((defender) => layers.defenders.append(drawPlayer(defender, true)));
+  }
   state.players.forEach((player) => layers.players.append(drawPlayer(player, false)));
 }
 
-function appendMultilineText(textElement, text, x, lineHeight = 28) {
-  const lines = String(text || '').split(/\n/).slice(0, 5);
+function textLength(text) {
+  return Array.from(String(text || '')).length;
+}
+
+function splitLongText(text, maxChars) {
+  const chars = Array.from(String(text || ''));
+  const chunks = [];
+  for (let index = 0; index < chars.length; index += maxChars) {
+    chunks.push(chars.slice(index, index + maxChars).join(''));
+  }
+  return chunks;
+}
+
+function wrapParagraph(text, maxChars) {
+  const words = String(text || '').trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return [''];
+
+  const lines = [];
+  let current = '';
+  words.forEach((word) => {
+    if (textLength(word) > maxChars) {
+      if (current) {
+        lines.push(current);
+        current = '';
+      }
+      const chunks = splitLongText(word, maxChars);
+      lines.push(...chunks.slice(0, -1));
+      current = chunks[chunks.length - 1] || '';
+      return;
+    }
+
+    const candidate = current ? `${current} ${word}` : word;
+    if (textLength(candidate) <= maxChars) {
+      current = candidate;
+      return;
+    }
+
+    if (current) lines.push(current);
+    current = word;
+  });
+
+  if (current) lines.push(current);
+  return lines;
+}
+
+function wrapTextLines(text, maxChars, maxLines) {
+  const lines = String(text || '').split(/\n/).flatMap((line) => wrapParagraph(line, maxChars));
+  if (!Number.isFinite(maxLines) || lines.length <= maxLines) return lines;
+  const clipped = lines.slice(0, maxLines);
+  const last = clipped[clipped.length - 1] || '';
+  clipped[clipped.length - 1] = textLength(last) > maxChars - 3
+    ? `${Array.from(last).slice(0, maxChars - 3).join('')}...`
+    : `${last}...`;
+  return clipped;
+}
+
+function appendMultilineText(textElement, text, x, lineHeight = 28, options = {}) {
+  const maxLines = options.maxLines || 5;
+  const lines = options.maxChars
+    ? wrapTextLines(text, options.maxChars, maxLines)
+    : String(text || '').split(/\n/).slice(0, maxLines);
   lines.forEach((line, index) => {
     const tspan = svgEl('tspan', { x, dy: index === 0 ? 0 : lineHeight });
     tspan.textContent = line;
@@ -381,7 +445,7 @@ function drawMeta() {
     layers.meta.append(notesLabel);
 
     const notes = svgEl('text', { class: 'meta-notes', x: metaX, y: 356 });
-    appendMultilineText(notes, state.notes, metaX, 23);
+    appendMultilineText(notes, state.notes, metaX, 23, { maxChars: 24, maxLines: 14 });
     layers.meta.append(notes);
   }
 }
@@ -470,6 +534,7 @@ function render() {
     controls.playNoteName.textContent = state.playName || 'New Play';
   }
   controls.snapToggle.checked = state.snap;
+  controls.defenseToggle.checked = state.defenseVisible;
   syncPlayerSizeControl();
   syncEndCapSizeControl();
   syncLineStyleControls();

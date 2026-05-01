@@ -90,6 +90,9 @@ select:focus-visible {
 .topbar h2 {
   margin: 0;
   line-height: 1.05;
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .brand h1 {
@@ -98,6 +101,8 @@ select:focus-visible {
 
 .topbar h2 {
   font-size: 28px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .eyebrow {
@@ -145,6 +150,9 @@ select {
 .text-area {
   min-height: 76px;
   resize: vertical;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .text-area:disabled {
@@ -216,6 +224,13 @@ select {
   gap: 6px;
 }
 
+.formation-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.formation-button,
 .preset-button {
   min-height: 34px;
   border: 1px solid var(--line);
@@ -227,6 +242,7 @@ select {
   font-weight: 850;
 }
 
+.formation-button:hover,
 .preset-button:hover {
   border-color: #a9b3bf;
 }
@@ -516,12 +532,17 @@ select {
   font-weight: 800;
   display: grid;
   gap: 4px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .book-note-item {
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
   align-items: baseline;
+  min-width: 0;
 }
 
 .book-note-title {
@@ -529,6 +550,17 @@ select {
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+  flex: 0 0 auto;
+}
+
+.book-note-item span {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  min-width: 0;
+}
+
+.book-note-item span:last-child {
+  flex: 1 1 0;
 }
 
 .book-note-label span {
@@ -631,6 +663,7 @@ select {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
 }
 
 .folder-label {
@@ -639,6 +672,8 @@ select {
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.06em;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .status {
@@ -955,17 +990,23 @@ select {
     padding: 6px 0;
     background: rgba(247, 248, 250, .94);
     backdrop-filter: blur(10px);
+    flex-wrap: wrap;
+    align-items: flex-start;
   }
 
   .topbar > div:first-child {
+    flex: 1 1 0;
     min-width: 0;
   }
 
   .topbar h2 {
-    overflow: hidden;
+    display: block;
+    overflow: visible;
     font-size: 19px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    min-width: 0;
   }
 
   .status {
@@ -1026,39 +1067,49 @@ select {
     order: 1;
   }
 
-  .drawing-tools-panel {
+  .formation-panel {
     order: 2;
   }
 
-  .selection-panel {
+  .drawing-tools-panel {
     order: 3;
   }
 
-  .notes-panel {
+  .selection-panel {
     order: 4;
   }
 
-  .marks-panel {
+  .notes-panel {
     order: 5;
   }
 
-  .playbook-panel {
+  .marks-panel {
     order: 6;
   }
 
-  .playset-panel {
+  .playbook-panel {
     order: 7;
   }
 
-  .export-panel {
+  .playset-panel {
     order: 8;
+  }
+
+  .export-panel {
+    order: 9;
   }
 
   .control-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .formation-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .wide-button,
+  .formation-button,
+  .preset-button,
   .text-input,
   select {
     min-height: 44px;
@@ -1179,6 +1230,10 @@ select {
 @media (max-width: 520px) {
   .control-grid {
     grid-template-columns: 1fr;
+  }
+
+  .formation-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .range-row {

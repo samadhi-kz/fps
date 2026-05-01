@@ -189,6 +189,28 @@ function moveLinkedRouteStarts(player) {
   });
 }
 
+function formationByValue(value) {
+  return OFFENSE_FORMATIONS.find((formation) => formation.value === value) || null;
+}
+
+function applyOffenseFormation(value) {
+  const formation = formationByValue(value);
+  if (!formation) return;
+
+  state.routeDraft = null;
+  state.drag = null;
+  state.pendingPreset = null;
+  state.players.forEach((player) => {
+    const position = formation.positions[player.label];
+    if (!position) return;
+    [player.x, player.y] = clampPoint([fieldX(position[0]), fieldY(position[1])]);
+    moveLinkedRouteStarts(player);
+  });
+  saveLocal(false);
+  render();
+  setStatus(formation.label);
+}
+
 function createAnnotation(point) {
   const text = prompt('Comment', 'Comment');
   if (!text) return;

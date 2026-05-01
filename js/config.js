@@ -39,7 +39,7 @@ const END_CAP_SIZE = {
 };
 const ROUTE_STYLE = {
   color: '#101010',
-  width: 9,
+  width: 5,
   opacity: 1,
   minWidth: 2,
   maxWidth: 16,
@@ -58,7 +58,115 @@ const ROUTE_PRESETS = [
   { value: 'motion', label: 'Motion' },
   { value: 'block', label: 'Block' }
 ];
+const OFFENSE_FORMATIONS = [
+  {
+    value: 'singleBack',
+    label: 'Single back',
+    positions: {
+      1: [12.5, 0],
+      2: [12.5, 5],
+      3: [12.5, 8],
+      4: [19, 0],
+      5: [23, 0]
+    }
+  },
+  {
+    value: 'spread',
+    label: 'Spread',
+    positions: {
+      1: [12.5, 0],
+      2: [12.5, 5],
+      3: [9, 0],
+      4: [3, 0],
+      5: [22, 0]
+    }
+  },
+  {
+    value: 'twins',
+    label: 'Twins',
+    positions: {
+      1: [12.5, 0],
+      2: [12.5, 5],
+      3: [9.5, 0],
+      4: [20, 0],
+      5: [23, 0]
+    }
+  },
+  {
+    value: 'twinsStack',
+    label: 'Twins stack',
+    positions: {
+      1: [12.5, 0],
+      2: [12.5, 5],
+      3: [9.5, 0],
+      4: [22, 0],
+      5: [22, 2.5]
+    }
+  },
+  {
+    value: 'trips',
+    label: 'Trips',
+    positions: {
+      1: [12.5, 0],
+      2: [12.5, 5],
+      3: [16, 0],
+      4: [20, 0],
+      5: [24, 0]
+    }
+  },
+  {
+    value: 'bunch',
+    label: 'Bunch',
+    positions: {
+      1: [12.5, 0],
+      2: [12.5, 5],
+      3: [20, 2.5],
+      4: [18.5, 0],
+      5: [21.5, 0]
+    }
+  },
+  {
+    value: 'tight',
+    label: 'Tight',
+    positions: {
+      1: [12.5, 0],
+      2: [12.5, 5],
+      3: [9.5, 0],
+      4: [11, 0],
+      5: [14, 0]
+    }
+  },
+  {
+    value: 'doubleBack',
+    label: 'Double back',
+    positions: {
+      1: [12.5, 0],
+      2: [12.5, 5],
+      3: [10, 7],
+      4: [15, 7],
+      5: [3, 0]
+    }
+  },
+  {
+    value: 'iFormation',
+    label: 'I formation',
+    positions: {
+      1: [12.5, 0],
+      2: [12.5, 4],
+      3: [12.5, 7],
+      4: [12.5, 10],
+      5: [23, 0]
+    }
+  }
+];
 const PLAYER_LABELS = ['1', '2', '3', '4', '5'];
+const PLAYER_ROLES = {
+  1: { value: 'center', label: 'Center/Screen' },
+  2: { value: 'qb', label: 'QB' },
+  3: { value: 'rb_wr', label: 'RB/WR' },
+  4: { value: 'blocker_wr', label: 'Blocker/WR/Screen' },
+  5: { value: 'wr', label: 'WR' }
+};
 const PLAYER_MARK_OPTIONS = [
   { value: 'ring', label: 'Light Blue Circle' },
   { value: 'star', label: 'Red Star' },
@@ -80,6 +188,7 @@ const defaultPlay = {
   playerMarks: { '1': 'ring', '2': 'ring', '3': 'ring', '4': 'ring', '5': 'ring' },
   playerSize: PLAYER_SIZE.default,
   endCapSize: END_CAP_SIZE.default,
+  defenseVisible: true,
   routeMode: 'straight',
   routeStyle: {
     color: ROUTE_STYLE.color,
@@ -87,11 +196,11 @@ const defaultPlay = {
     opacity: ROUTE_STYLE.opacity
   },
   players: [
-    { id: 'p1', label: '1', x: fieldX(12.5), y: fieldY(0), role: 'qb' },
-    { id: 'p2', label: '2', x: fieldX(12.5), y: fieldY(5), role: 'normal' },
-    { id: 'p3', label: '3', x: fieldX(10), y: fieldY(0), role: 'normal' },
-    { id: 'p4', label: '4', x: fieldX(15), y: fieldY(0), role: 'normal' },
-    { id: 'p5', label: '5', x: fieldX(20), y: fieldY(0), role: 'normal' }
+    { id: 'p1', label: '1', x: fieldX(12.5), y: fieldY(0), role: 'center' },
+    { id: 'p2', label: '2', x: fieldX(12.5), y: fieldY(5), role: 'qb' },
+    { id: 'p3', label: '3', x: fieldX(10), y: fieldY(0), role: 'rb_wr' },
+    { id: 'p4', label: '4', x: fieldX(15), y: fieldY(0), role: 'blocker_wr' },
+    { id: 'p5', label: '5', x: fieldX(20), y: fieldY(0), role: 'wr' }
   ],
   defenders: [
     { id: 'd1', label: 'X', x: fieldX(5), y: fieldY(-5) },
@@ -119,6 +228,7 @@ const state = {
   playerMarks: cloneData(defaultPlay.playerMarks),
   players: [],
   defenders: [],
+  defenseVisible: true,
   routes: [],
   annotations: [],
   playerSize: PLAYER_SIZE.default,
@@ -175,5 +285,6 @@ const controls = {
   bookNoteName: document.querySelector('#bookNoteName'),
   playNoteName: document.querySelector('#playNoteName'),
   endCap: document.querySelector('#endCap'),
-  snapToggle: document.querySelector('#snapToggle')
+  snapToggle: document.querySelector('#snapToggle'),
+  defenseToggle: document.querySelector('#defenseToggle')
 };

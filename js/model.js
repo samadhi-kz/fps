@@ -96,7 +96,8 @@ function selectionLabel() {
   if (state.selectedType === 'player') {
     const player = state.players.find((item) => item.id === state.selectedId);
     const marker = markLabel(playerMark(player));
-    return player ? `Offense ${player.label}${marker ? ` / ${marker}` : ''}` : 'Offense';
+    const role = playerRoleLabel(player?.label);
+    return player ? `Offense ${player.label} ${role}${marker ? ` / ${marker}` : ''}` : 'Offense';
   }
   if (state.selectedType === 'defender') return 'Defense X';
   if (state.selectedType === 'route') {
@@ -106,6 +107,14 @@ function selectionLabel() {
   }
   if (state.selectedType === 'annotation') return 'Comment';
   return 'Selected';
+}
+
+function playerRoleInfo(label) {
+  return PLAYER_ROLES[String(label)] || { value: 'normal', label: 'Offense' };
+}
+
+function playerRoleLabel(label) {
+  return playerRoleInfo(label).label;
 }
 
 function pointFromEvent(event) {
@@ -134,6 +143,7 @@ function currentPlaySnapshot() {
     playerMarks: normalizePlayerMarks(state.playerMarks),
     playerSize: state.playerSize,
     endCapSize: state.endCapSize,
+    defenseVisible: state.defenseVisible,
     routeMode: normalizeRouteMode(state.routeMode),
     routeStyle: normalizeRouteStyle(state.routeStyle),
     updatedAt: new Date().toISOString(),
@@ -155,6 +165,7 @@ function normalizePlay(play) {
     playerMarks: normalizePlayerMarks(play.playerMarks || fallback.playerMarks),
     playerSize: normalizePlayerSize(play.playerSize ?? fallback.playerSize),
     endCapSize: normalizeEndCapSize(play.endCapSize ?? fallback.endCapSize),
+    defenseVisible: play.defenseVisible === false ? false : fallback.defenseVisible,
     routeMode: normalizeRouteMode(play.routeMode || fallback.routeMode),
     routeStyle: normalizeRouteStyle(play.routeStyle || fallback.routeStyle),
     updatedAt: play.updatedAt || '',
@@ -223,10 +234,11 @@ function normalizePlayers(players) {
   const source = cloneData(players || []);
   return defaultPlay.players.map((base, index) => {
     const incoming = source[index] || {};
-    const role = index === 0 ? 'qb' : 'normal';
+    const label = String(index + 1);
+    const role = playerRoleInfo(label).value;
     return {
       id: incoming.id || base.id,
-      label: String(index + 1),
+      label,
       x: Number.isFinite(Number(incoming.x)) ? Number(incoming.x) : base.x,
       y: Number.isFinite(Number(incoming.y)) ? Number(incoming.y) : base.y,
       role
@@ -329,6 +341,7 @@ function applyPlay(play) {
   state.playerMarks = cloneData(normalized.playerMarks || {});
   state.playerSize = normalizePlayerSize(normalized.playerSize);
   state.endCapSize = normalizeEndCapSize(normalized.endCapSize);
+  state.defenseVisible = Boolean(normalized.defenseVisible);
   state.routeMode = normalizeRouteMode(normalized.routeMode);
   state.routeStyle = normalizeRouteStyle(normalized.routeStyle);
   state.players = cloneData(normalized.players);
@@ -355,6 +368,7 @@ function clearActivePlayView(label = 'No Play Selected') {
   state.playerMarks = {};
   state.playerSize = PLAYER_SIZE.default;
   state.endCapSize = END_CAP_SIZE.default;
+  state.defenseVisible = defaultPlay.defenseVisible;
   state.routeMode = 'straight';
   state.routeStyle = cloneData(defaultPlay.routeStyle);
   state.players = [];
