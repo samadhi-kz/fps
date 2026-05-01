@@ -143,6 +143,7 @@ select {
 
 .icon-button,
 .tool-button,
+.dock-action-button,
 .wide-button {
   border: 1px solid var(--line);
   border-radius: 7px;
@@ -165,6 +166,17 @@ select {
 }
 
 .tool-button {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 10px;
+  font-size: 13px;
+  text-align: left;
+}
+
+.dock-action-button {
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -232,7 +244,8 @@ select {
 
 .wide-button:hover,
 .icon-button:hover,
-.tool-button:hover {
+.tool-button:hover,
+.dock-action-button:hover {
   border-color: #a9b3bf;
 }
 
@@ -975,7 +988,8 @@ select {
     display: none;
   }
 
-  .mobile-tool-row .tool-button {
+  .mobile-tool-row .tool-button,
+  .mobile-tool-row .dock-action-button {
     display: grid;
     flex: 0 0 72px;
     grid-template-columns: 1fr;
@@ -991,6 +1005,14 @@ select {
     width: 28px;
     height: 28px;
     flex-basis: 28px;
+  }
+
+  .mobile-delete-button {
+    flex-basis: 76px;
+  }
+
+  .mobile-finish-button {
+    flex-basis: 72px;
   }
 
   .mobile-preset-row .preset-button {

@@ -22,6 +22,7 @@ Open `index.html` in a browser and start designing. No build step or server is r
 - Draw 5-on-5 flag football plays on a field diagram
 - Move offense players, defense markers, routes, route points, and text annotations
 - Draw route, motion, pass, and block lines from offensive players
+- Start drawing tools from an offensive player or from any open point on the field
 - Draw freehand routes and smooth curved routes from offensive players
 - Click from a player to place route points one by one, then press Enter or double-click to finish
 - Add common route presets such as Go, Out, In, Slant, Post, Corner, Curl, Motion, and Block
@@ -46,7 +47,7 @@ Open `index.html` in a browser and start designing. No build step or server is r
 2. Use `+ Folder` and `+ Play` to organize a playbook.
 3. Drag folders or plays in the tree to reorder them.
 4. Drag a play onto another folder to move it there.
-5. Select a drawing tool, then drag from an offensive player to create a line.
+5. Select a drawing tool, then drag from an offensive player or anywhere on the field to create a line.
 6. Click an offensive player instead of dragging to place route points one by one; press Enter or double-click to finish.
 7. Use Draw for freehand routes, or choose Curve/Drawn in Shape for smoother route paths.
 8. Select a player and click a preset button to add a common route instantly.
@@ -56,7 +57,7 @@ Open `index.html` in a browser and start designing. No build step or server is r
 12. Use `Open JSON` to load a saved playbook.
 13. Use `PNG`, `PDF Play`, or `PDF Book` for sharing and printing.
 
-On phones, the field is shown first and the main drawing tools stay in the bottom dock. Detailed controls, playbook management, saving, and export actions are below the field.
+On phones, the field is shown first and the main drawing tools stay in the bottom dock. The dock also includes a Done button for point-by-point line entry and a delete button for the selected line or comment. Detailed controls, playbook management, saving, and export actions are below the field.
 
 ## Tools
 
@@ -67,6 +68,8 @@ On phones, the field is shown first and the main drawing tools stay in the botto
 - **Pass**: Draw a dashed pass line
 - **Block**: Draw a block line with a T end cap
 - **Comment**: Add text annotations on the field
+
+Route and Draw default to arrow endings. Motion and Pass default to dot endings. Block defaults to a T ending.
 
 ## Playbook Tree
 

@@ -370,6 +370,7 @@ function drawMeta() {
 
 function drawTemp() {
   layers.temp.replaceChildren();
+  syncDockActionButtons();
   if (!state.routeDraft) return;
   const points = displayPoints(state.routeDraft);
   if (points.length < 2) return;
@@ -412,7 +413,20 @@ function drawMarkControls() {
       setStatus(select.value ? `Player ${player.label}: ${markLabel(select.value)}` : `Player ${player.label}: No mark`);
     });
     item.append(badge, select);
-    controls.markList.append(item);
+  controls.markList.append(item);
+  });
+}
+
+function syncDockActionButtons() {
+  const canDeleteFromDock = state.selectedType === 'route' || state.selectedType === 'annotation';
+  const canFinishRoute = state.routeDraft?.input === 'poly'
+    && state.routeDraft.points.length >= 2
+    && routeLength(state.routeDraft.points) > 20;
+  document.querySelectorAll('[data-action="delete-selected"]').forEach((button) => {
+    button.disabled = !canDeleteFromDock;
+  });
+  document.querySelectorAll('[data-action="finish-route"]').forEach((button) => {
+    button.disabled = !canFinishRoute;
   });
 }
 
@@ -423,6 +437,7 @@ function syncSelectionControls() {
   controls.selectionBadge.textContent = selectionLabel();
   controls.selectedText.disabled = !selectedNote;
   controls.selectedText.value = selectedNote?.text || '';
+  syncDockActionButtons();
 }
 
 function render() {

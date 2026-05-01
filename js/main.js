@@ -25,8 +25,14 @@ document.querySelectorAll('.tool-button').forEach((button) => {
   button.addEventListener('click', () => {
     state.tool = button.dataset.tool;
     state.pendingPreset = null;
+    if (state.tool !== 'select') {
+      state.selectedId = null;
+      state.selectedType = null;
+    }
+    syncToolEndCapDefault(state.tool);
     syncToolButtons();
     syncPresetButtons();
+    render();
     setStatus(button.title);
   });
 });
@@ -113,6 +119,12 @@ document.querySelector('#newPlayBtn').addEventListener('click', () => createNewP
 document.querySelector('#newFolderBtn').addEventListener('click', createNewFolder);
 document.querySelector('#newPlayInFolderBtn').addEventListener('click', () => createNewPlay());
 document.querySelector('#deleteBtn').addEventListener('click', deleteSelectedItem);
+document.querySelectorAll('[data-action="finish-route"]').forEach((button) => {
+  button.addEventListener('click', finishRoute);
+});
+document.querySelectorAll('[data-action="delete-selected"]').forEach((button) => {
+  button.addEventListener('click', deleteSelectedItem);
+});
 document.querySelector('#flipBtn').addEventListener('click', flipPlay);
 document.querySelector('#clearRoutesBtn').addEventListener('click', clearRoutes);
 document.querySelector('#openPlaysetBtn').addEventListener('click', openPlaysetFile);

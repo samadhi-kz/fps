@@ -2,29 +2,48 @@
 function routeDefaultsForTool(tool) {
   const style = normalizeRouteStyle(state.routeStyle);
   const mode = normalizeRouteMode(tool === 'draw' ? 'draw' : controls.routeShape.value || state.routeMode);
-  if (tool === 'block') return { type: 'block', end: 't', mode, ...style };
-  if (tool === 'pass') return { type: 'pass', end: 'dot', mode, ...style };
-  if (tool === 'motion') return { type: 'motion', end: 'arrow', mode: 'straight', ...style };
-  return { type: 'route', end: controls.endCap.value, mode, ...style };
+  if (tool === 'block') return { type: 'block', end: defaultEndCapForTool(tool), mode, ...style };
+  if (tool === 'pass') return { type: 'pass', end: defaultEndCapForTool(tool), mode, ...style };
+  if (tool === 'motion') return { type: 'motion', end: defaultEndCapForTool(tool), mode: 'straight', ...style };
+  return { type: 'route', end: defaultEndCapForTool(tool), mode, ...style };
+}
+
+function defaultEndCapForTool(tool) {
+  if (tool === 'block') return 't';
+  if (tool === 'motion' || tool === 'pass') return 'dot';
+  return 'arrow';
+}
+
+function syncToolEndCapDefault(tool = state.tool) {
+  if (!DRAW_TOOLS.includes(tool)) return;
+  controls.endCap.value = defaultEndCapForTool(tool);
 }
 
 function pointDistance(a, b) {
   return Math.hypot(a[0] - b[0], a[1] - b[1]);
 }
 
-function startRoute(player, event) {
+function startRouteFromPoint(startPoint, event, player = null) {
   const defaults = routeDefaultsForTool(state.tool);
-  const start = clampPoint([player.x, player.y]);
+  const start = clampPoint(startPoint);
   const point = pointFromEvent(event);
   state.routeDraft = {
     ...defaults,
     input: 'drag',
-    playerId: player.id,
+    ...(player ? { playerId: player.id } : {}),
     points: [start, [point.x, point.y]]
   };
   state.drag = { kind: 'draw-route', start: [point.x, point.y], moved: false };
   setStatus('Drag or click points');
   drawTemp();
+}
+
+function startRoute(player, event) {
+  startRouteFromPoint([player.x, player.y], event, player);
+}
+
+function startRouteAtPoint(point, event) {
+  startRouteFromPoint([point.x, point.y], event);
 }
 
 function updateRouteDraft(event) {
@@ -39,18 +58,26 @@ function updateRouteDraft(event) {
   drawTemp();
 }
 
-function startFreehandRoute(player) {
+function startFreehandRouteFromPoint(startPoint, player = null) {
   const defaults = routeDefaultsForTool('draw');
-  const start = clampPoint([player.x, player.y]);
+  const start = clampPoint(startPoint);
   state.routeDraft = {
     ...defaults,
     input: 'freehand',
-    playerId: player.id,
+    ...(player ? { playerId: player.id } : {}),
     points: [start]
   };
   state.drag = { kind: 'freehand-route', last: start };
   setStatus('Drawing');
   drawTemp();
+}
+
+function startFreehandRoute(player) {
+  startFreehandRouteFromPoint([player.x, player.y], player);
+}
+
+function startFreehandRouteAtPoint(point) {
+  startFreehandRouteFromPoint([point.x, point.y]);
 }
 
 function updateFreehandDraft(event) {
@@ -227,7 +254,7 @@ function routePresetDefinition(presetName, player) {
     },
     motion: {
       type: 'motion',
-      end: 'arrow',
+      end: 'dot',
       mode: 'straight',
       points: [[0, 0], [outside * 7, 0]]
     },
@@ -333,10 +360,12 @@ function handlePointerDown(event) {
     return;
   }
 
-  if (hit?.kind === 'player' && DRAW_TOOLS.includes(state.tool)) {
-    const player = state.players.find((item) => item.id === hit.id);
+  if (DRAW_TOOLS.includes(state.tool)) {
+    const player = hit?.kind === 'player' ? state.players.find((item) => item.id === hit.id) : null;
     if (player && state.tool === 'draw') startFreehandRoute(player);
     else if (player) startRoute(player, event);
+    else if (state.tool === 'draw') startFreehandRouteAtPoint(point);
+    else startRouteAtPoint(point, event);
     return;
   }
 
