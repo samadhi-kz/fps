@@ -26,7 +26,7 @@
           <div id="playbookTree" class="playbook-tree" role="tree" aria-label="Playbook"></div>
         </section>
 
-        <section class="panel tools-panel">
+        <section class="panel playset-panel">
           <div class="panel-title">Playset File</div>
           <div id="playsetFileName" class="file-badge">Save Location: Not Selected</div>
           <div id="playsetFileHint" class="file-hint">Open JSON or save with a name to enable overwrite save.</div>
@@ -38,7 +38,7 @@
           <button id="savePlaysetAsBtn" class="wide-button" type="button">Save As</button>
         </section>
 
-        <section class="panel">
+        <section class="panel drawing-tools-panel">
           <div class="panel-title">Tools</div>
           <div class="segmented" role="group" aria-label="Tools">
             <button class="tool-button is-active" type="button" data-tool="select" title="Select"><span class="tool-icon">↖</span><span>Select</span></button>
@@ -47,7 +47,7 @@
             <button class="tool-button" type="button" data-tool="motion" title="Motion"><span class="tool-icon">〰</span><span>Motion</span></button>
             <button class="tool-button" type="button" data-tool="pass" title="Pass"><span class="tool-icon">⋯</span><span>Pass</span></button>
             <button class="tool-button" type="button" data-tool="block" title="Block"><span class="tool-icon">⊣</span><span>Block</span></button>
-            <button class="tool-button" type="button" data-tool="text" title="etc"><span class="tool-icon">T</span><span>Comment</span></button>
+            <button class="tool-button" type="button" data-tool="text" title="Comment"><span class="tool-icon">T</span><span>Comment</span></button>
           </div>
 
           <div class="control-grid">
@@ -113,24 +113,24 @@
           </div>
         </section>
 
-        <section class="panel">
+        <section class="panel selection-panel">
           <div class="panel-title">Selection</div>
           <div id="selectionBadge" class="selection-badge">Not Selected</div>
           <label class="field-label" for="selectedText">Comment</label>
           <textarea id="selectedText" class="text-area" rows="3" placeholder="Select a comment" disabled></textarea>
         </section>
 
-        <section class="panel">
+        <section class="panel notes-panel">
           <div class="panel-title">Play Notes</div>
           <textarea id="playNotes" class="text-area" rows="3" placeholder="Notes"></textarea>
         </section>
 
-        <section class="panel marks">
+        <section class="panel marks-panel marks">
           <div class="panel-title">Marks</div>
           <div id="markList" class="mark-list"></div>
         </section>
 
-        <section class="panel">
+        <section class="panel export-panel">
           <div class="action-row">
             <button id="deleteBtn" class="wide-button danger" type="button">Delete</button>
             <button id="exportPngBtn" class="wide-button" type="button">PNG</button>
@@ -147,7 +147,7 @@
           <div>
             <h2 id="titleLabel">New Play</h2>
           </div>
-          <div id="statusText" class="status">Ready</div>
+          <div id="statusText" class="status" role="status" aria-live="polite">Ready</div>
         </div>
 
         <div class="canvas-wrap">
@@ -181,7 +181,7 @@
         <button class="tool-button" type="button" data-tool="motion" title="Motion"><span class="tool-icon">〰</span><span>Motion</span></button>
         <button class="tool-button" type="button" data-tool="pass" title="Pass"><span class="tool-icon">⋯</span><span>Pass</span></button>
         <button class="tool-button" type="button" data-tool="block" title="Block"><span class="tool-icon">⊣</span><span>Block</span></button>
-        <button class="tool-button" type="button" data-tool="text" title="etc"><span class="tool-icon">T</span><span>Comment</span></button>
+        <button class="tool-button" type="button" data-tool="text" title="Comment"><span class="tool-icon">T</span><span>Comment</span></button>
         <button class="dock-action-button mobile-finish-button" type="button" data-action="finish-route" title="Finish current line" disabled><span class="tool-icon">✓</span><span>Done</span></button>
         <button class="dock-action-button danger mobile-delete-button" type="button" data-action="delete-selected" title="Delete selected line or comment" disabled><span class="tool-icon">⌫</span><span>Delete</span></button>
       </div>

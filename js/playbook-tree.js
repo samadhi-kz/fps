@@ -42,8 +42,13 @@ function renderPlaybookSelectors() {
     label.type = 'button';
     label.dataset.playbookAction = 'select-folder';
     label.dataset.folderId = folder.id;
-    label.innerHTML = `<span class="tree-icon">□</span><span class="tree-name"></span>`;
-    label.querySelector('.tree-name').textContent = folder.name;
+    const folderIcon = document.createElement('span');
+    folderIcon.className = 'tree-icon';
+    folderIcon.textContent = '□';
+    const folderName = document.createElement('span');
+    folderName.className = 'tree-name';
+    folderName.textContent = folder.name;
+    label.append(folderIcon, folderName);
 
     const actions = document.createElement('div');
     actions.className = 'tree-actions';
@@ -85,8 +90,13 @@ function renderPlaybookSelectors() {
         playLabel.dataset.playbookAction = 'select-play';
         playLabel.dataset.folderId = folder.id;
         playLabel.dataset.playId = play.id;
-        playLabel.innerHTML = `<span class="tree-icon">•</span><span class="tree-name"></span>`;
-        playLabel.querySelector('.tree-name').textContent = play.name || 'Untitled';
+        const playIcon = document.createElement('span');
+        playIcon.className = 'tree-icon';
+        playIcon.textContent = '•';
+        const playName = document.createElement('span');
+        playName.className = 'tree-name';
+        playName.textContent = play.name || 'Untitled';
+        playLabel.append(playIcon, playName);
 
         const playActions = document.createElement('div');
         playActions.className = 'tree-actions';

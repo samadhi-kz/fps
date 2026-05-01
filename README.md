@@ -26,7 +26,7 @@ Open `index.html` in a browser and start designing. No build step or server is r
 - Draw freehand routes and smooth curved routes from offensive players
 - Click from a player to place route points one by one, then press Enter or double-click to finish
 - Add common route presets such as Go, Out, In, Slant, Post, Corner, Curl, Motion, and Block
-- Use a mobile-friendly canvas-first layout with a fixed bottom tool dock
+- Use a mobile-friendly canvas-first layout with a larger fixed bottom tool dock
 - Edit route points with handles and add intermediate points
 - Customize line color, line width, line opacity, end cap type, and end cap size
 - Keep offensive player numbers visible by rendering players above drawn lines
@@ -57,7 +57,7 @@ Open `index.html` in a browser and start designing. No build step or server is r
 12. Use `Open JSON` to load a saved playbook.
 13. Use `PNG`, `PDF Play`, or `PDF Book` for sharing and printing.
 
-On phones, the field is shown first and the main drawing tools stay in the bottom dock. The dock also includes a Done button for point-by-point line entry and a delete button for the selected line or comment. Detailed controls, playbook management, saving, and export actions are below the field.
+On phones, the field is shown first and the main drawing tools stay in the bottom dock with larger tap targets. The dock also includes a Done button for point-by-point line entry and a delete button for the selected line or comment. Detailed drawing and selection controls appear before playbook management, saving, and export actions below the field.
 
 ## Tools
 
@@ -107,4 +107,4 @@ This project is licensed under the MIT License.
 
 ## 日本語まとめ
 
-5vs5 フラッグフットボール用のプレイ作成ツールです。`index.html` をブラウザで開くだけで使えます。フォルダとプレイはドラッグで並べ替え・移動でき、空フォルダもOKです。線の色・太さ・透明度を変えられ、手描きルート、曲線ルート、クリック式の折れ点入力、よく使うルートプリセットにも対応しています。スマホではフィールドを先に表示し、画面下の固定ツールバーから主要ツールを操作できます。保存はJSON、出力はPNG、現在のプレイPDF、プレイブック全体PDFに対応しています。Safariでは直接上書き保存ができないため、`Save As` を使ってください。
+5vs5 フラッグフットボール用のプレイ作成ツールです。`index.html` をブラウザで開くだけで使えます。フォルダとプレイはドラッグで並べ替え・移動でき、空フォルダもOKです。線の色・太さ・透明度を変えられ、手描きルート、曲線ルート、クリック式の折れ点入力、よく使うルートプリセットにも対応しています。スマホではフィールドを先に表示し、画面下の固定ツールバーから主要ツールを大きめのタップ領域で操作できます。詳細な線・選択設定はフィールド下に優先表示されます。保存はJSON、出力はPNG、現在のプレイPDF、プレイブック全体PDFに対応しています。Safariでは直接上書き保存ができないため、`Save As` を使ってください。
