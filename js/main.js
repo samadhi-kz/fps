@@ -126,6 +126,9 @@ document.querySelectorAll('[data-action="finish-route"]').forEach((button) => {
 document.querySelectorAll('[data-action="delete-selected"]').forEach((button) => {
   button.addEventListener('click', deleteSelectedItem);
 });
+document.querySelectorAll('[data-action="toggle-fullscreen"]').forEach((button) => {
+  button.addEventListener('click', toggleFullscreen);
+});
 document.querySelector('#flipBtn').addEventListener('click', flipPlay);
 document.querySelector('#clearRoutesBtn').addEventListener('click', clearRoutes);
 document.querySelector('#openPlaysetBtn').addEventListener('click', openPlaysetFile);
@@ -184,5 +187,26 @@ window.addEventListener('resize', () => {
     render();
   });
 });
+
+window.addEventListener('fullscreenchange', () => {
+  const isFullscreen = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+  const label = isFullscreen ? 'Exit Fullscreen' : 'Fullscreen';
+  document.querySelectorAll('[data-action="toggle-fullscreen"]').forEach((button) => {
+    button.title = label;
+  });
+  setStatus(label);
+});
+
+function toggleFullscreen() {
+  const el = document.documentElement;
+  const isFullscreen = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+  if (isFullscreen) {
+    if (document.exitFullscreen) document.exitFullscreen();
+    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+    return;
+  }
+  if (el.requestFullscreen) el.requestFullscreen();
+  else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+}
 
 loadInitialState();

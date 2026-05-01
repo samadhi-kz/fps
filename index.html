@@ -79,6 +79,11 @@
             <button class="preset-button" type="button" data-preset="motion">Motion</button>
             <button class="preset-button" type="button" data-preset="block">Block</button>
           </div>
+          <div class="action-row tool-actions">
+            <button class="wide-button" type="button" data-action="finish-route" disabled>Done</button>
+            <button class="wide-button danger" type="button" data-action="delete-selected" disabled>Delete</button>
+            <button class="wide-button" type="button" data-action="toggle-fullscreen">Fullscreen</button>
+          </div>
           <label class="check-row">
             <input id="snapToggle" type="checkbox">
             <span>Snap</span>
@@ -184,6 +189,7 @@
         <button class="tool-button" type="button" data-tool="text" title="Comment"><span class="tool-icon">T</span><span>Comment</span></button>
         <button class="dock-action-button mobile-finish-button" type="button" data-action="finish-route" title="Finish current line" disabled><span class="tool-icon">✓</span><span>Done</span></button>
         <button class="dock-action-button danger mobile-delete-button" type="button" data-action="delete-selected" title="Delete selected line or comment" disabled><span class="tool-icon">⌫</span><span>Delete</span></button>
+        <button class="dock-action-button" type="button" data-action="toggle-fullscreen" title="Toggle fullscreen"><span class="tool-icon">⬜</span><span>Full</span></button>
       </div>
       <div class="mobile-preset-row" aria-label="Route presets">
         <button class="preset-button" type="button" data-preset="go">Go</button>
