@@ -96,6 +96,10 @@ function sanitizePoints(points) {
   return cleaned;
 }
 
+function needsLargeTouchTargets() {
+  return window.matchMedia?.('(pointer: coarse)').matches || window.innerWidth <= 860;
+}
+
 function drawGrid() {
   layers.grid.replaceChildren();
   const { left, right, scrimmageY, yardScale, widthYards, gridStepYards, frontYards, backYards, xAxisGuides } = FIELD_DIMENSIONS;
@@ -208,12 +212,15 @@ function drawRouteEnd(group, route) {
 }
 
 function drawRouteHandles(group, route) {
+  const touchSized = needsLargeTouchTargets();
+  const handleRadius = touchSized ? 18 : 14;
+  const insertRadius = touchSized ? 13 : 9;
   route.points.forEach((point, index) => {
     group.append(svgEl('circle', {
       class: 'route-handle',
       cx: point[0],
       cy: point[1],
-      r: 14,
+      r: handleRadius,
       'data-id': route.id,
       'data-kind': 'route-point',
       'data-index': index
@@ -227,7 +234,7 @@ function drawRouteHandles(group, route) {
       class: 'route-insert',
       cx: (a[0] + b[0]) / 2,
       cy: (a[1] + b[1]) / 2,
-      r: 9,
+      r: insertRadius,
       'data-id': route.id,
       'data-kind': 'route-insert',
       'data-index': i
@@ -238,6 +245,7 @@ function drawRouteHandles(group, route) {
 function drawRoutes() {
   layers.routeHits.replaceChildren();
   layers.routes.replaceChildren();
+  const touchSized = needsLargeTouchTargets();
   state.routes.forEach((route) => {
     if (!route.points || route.points.length < 2) return;
     const selected = state.selectedType === 'route' && state.selectedId === route.id;
@@ -246,7 +254,11 @@ function drawRoutes() {
     const d = routePath(route);
     const style = normalizeRouteStyle(route);
 
-    hitGroup.append(svgEl('path', { class: 'route-hit', d, 'stroke-width': Math.max(34, style.width + 24) }));
+    hitGroup.append(svgEl('path', {
+      class: 'route-hit',
+      d,
+      'stroke-width': Math.max(touchSized ? 46 : 34, style.width + (touchSized ? 34 : 24))
+    }));
     group.append(svgEl('path', {
       class: `route ${route.type}${selected ? ' is-selected' : ''}`,
       d,
@@ -285,6 +297,7 @@ function drawPlayer(player, defender = false) {
   const size = normalizePlayerSize(state.playerSize);
   const selectedRing = size + 7;
   const qbSize = size * 2;
+  const hitPadding = needsLargeTouchTargets() ? 30 : 20;
   const mark = defender ? '' : playerMark(player);
   const group = svgEl('g', {
     class: `player ${defender ? 'defender' : ''}`,
@@ -292,7 +305,7 @@ function drawPlayer(player, defender = false) {
     'data-id': player.id,
     'data-kind': defender ? 'defender' : 'player'
   });
-  group.append(svgEl('circle', { class: 'player-hit', cx: 0, cy: 0, r: size + 20 }));
+  group.append(svgEl('circle', { class: 'player-hit', cx: 0, cy: 0, r: size + hitPadding }));
   if (mark === 'ring') {
     group.append(svgEl('circle', { class: 'player-shape player-mark-ring-fill', cx: 0, cy: 0, r: size }));
   } else if (mark === 'star') {

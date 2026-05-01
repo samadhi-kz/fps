@@ -324,10 +324,19 @@ function moveRoute(route, dx, dy) {
   route.points = route.points.map((point) => clampPoint([point[0] + dx, point[1] + dy]));
 }
 
+function captureFieldPointer(event) {
+  if (!field.setPointerCapture || field.hasPointerCapture?.(event.pointerId)) return;
+  try {
+    field.setPointerCapture(event.pointerId);
+  } catch {
+    // Pointer capture can fail if the browser has already cancelled the touch.
+  }
+}
+
 function handlePointerDown(event) {
   const hit = targetFromEvent(event);
   const point = pointFromEvent(event);
-  field.setPointerCapture(event.pointerId);
+  captureFieldPointer(event);
 
   if (state.routeDraft?.input === 'poly') {
     addPolylinePoint(point);
@@ -453,6 +462,16 @@ function handlePointerUp(event) {
 
   if (state.drag) saveLocal(false);
   state.drag = null;
+}
+
+function cancelPointerInteraction() {
+  const shouldSave = Boolean(state.drag && !state.routeDraft);
+  const hadDraft = Boolean(state.routeDraft);
+  state.drag = null;
+  state.routeDraft = null;
+  if (shouldSave) saveLocal(false);
+  if (hadDraft) setStatus('Cancelled');
+  render();
 }
 
 function editSelectedAnnotation() {

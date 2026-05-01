@@ -2,6 +2,7 @@
 field.addEventListener('pointerdown', handlePointerDown);
 field.addEventListener('pointermove', handlePointerMove);
 field.addEventListener('pointerup', handlePointerUp);
+field.addEventListener('pointercancel', cancelPointerInteraction);
 field.addEventListener('dblclick', (event) => {
   if (state.routeDraft?.input === 'poly') {
     event.preventDefault();
@@ -173,5 +174,15 @@ document.addEventListener('keydown', (event) => {
 
 window.addEventListener('afterprint', () => setStatus('準備OK'));
 window.addEventListener('afterprint', cleanupPrintBook);
+window.addEventListener('blur', cancelPointerInteraction);
+
+let resizeRenderFrame = null;
+window.addEventListener('resize', () => {
+  if (resizeRenderFrame) window.cancelAnimationFrame(resizeRenderFrame);
+  resizeRenderFrame = window.requestAnimationFrame(() => {
+    resizeRenderFrame = null;
+    render();
+  });
+});
 
 loadInitialState();

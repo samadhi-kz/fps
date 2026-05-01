@@ -11,6 +11,7 @@
   --gold: #f3b43f;
   --blue: #2f6fed;
   --shadow: 0 18px 46px rgba(20, 30, 45, .12);
+  --mobile-dock-space: 148px;
 }
 
 * {
@@ -38,7 +39,16 @@ button:disabled {
 }
 
 button {
+  line-height: 1.15;
   touch-action: manipulation;
+}
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 3px solid rgba(47, 111, 237, .34);
+  outline-offset: 2px;
 }
 
 .app-shell {
@@ -53,6 +63,7 @@ button {
   gap: 14px;
   max-height: 100vh;
   overflow-y: auto;
+  scrollbar-gutter: stable;
   padding: 18px;
   border-right: 1px solid var(--line);
   background: #fff;
@@ -853,7 +864,7 @@ select {
   body {
     min-height: 100dvh;
     overflow-x: hidden;
-    padding-bottom: calc(132px + env(safe-area-inset-bottom));
+    padding-bottom: calc(var(--mobile-dock-space) + env(safe-area-inset-bottom));
   }
 
   .app-shell {
@@ -940,8 +951,60 @@ select {
     max-height: 220px;
   }
 
-  .tools-panel .segmented {
+  .tree-row {
+    grid-template-columns: 32px minmax(0, 1fr) auto;
+    min-height: 42px;
+  }
+
+  .tree-toggle,
+  .tree-spacer {
+    width: 32px;
+    height: 38px;
+  }
+
+  .tree-actions {
+    opacity: 1;
+  }
+
+  .tree-action {
+    width: 36px;
+    height: 36px;
+  }
+
+  .drawing-tools-panel .segmented {
     display: none;
+  }
+
+  .brand {
+    order: 1;
+  }
+
+  .drawing-tools-panel {
+    order: 2;
+  }
+
+  .selection-panel {
+    order: 3;
+  }
+
+  .notes-panel {
+    order: 4;
+  }
+
+  .marks-panel {
+    order: 5;
+  }
+
+  .playbook-panel {
+    order: 6;
+  }
+
+  .playset-panel {
+    order: 7;
+  }
+
+  .export-panel {
+    order: 8;
   }
 
   .control-grid {
@@ -978,7 +1041,10 @@ select {
     display: flex;
     gap: 6px;
     overflow-x: auto;
+    padding-bottom: 1px;
     overscroll-behavior-x: contain;
+    scroll-padding-inline: 10px;
+    scroll-snap-type: x proximity;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
   }
@@ -991,20 +1057,22 @@ select {
   .mobile-tool-row .tool-button,
   .mobile-tool-row .dock-action-button {
     display: grid;
-    flex: 0 0 72px;
+    flex: 0 0 74px;
     grid-template-columns: 1fr;
     justify-items: center;
-    min-height: 54px;
+    min-height: 58px;
     padding: 6px;
     gap: 4px;
     font-size: 11px;
     text-align: center;
+    scroll-snap-align: start;
+    touch-action: pan-x manipulation;
   }
 
   .mobile-tool-row .tool-icon {
-    width: 28px;
-    height: 28px;
-    flex-basis: 28px;
+    width: 30px;
+    height: 30px;
+    flex-basis: 30px;
   }
 
   .mobile-delete-button {
@@ -1016,8 +1084,48 @@ select {
   }
 
   .mobile-preset-row .preset-button {
-    flex: 0 0 64px;
-    min-height: 34px;
+    flex: 0 0 70px;
+    min-height: 44px;
+    scroll-snap-align: start;
+    touch-action: pan-x manipulation;
+  }
+}
+
+@media (max-width: 860px) and (orientation: landscape) {
+  :root {
+    --mobile-dock-space: 128px;
+  }
+
+  .workspace {
+    padding-top: 8px;
+  }
+
+  .mobile-dock {
+    gap: 6px;
+    padding-top: 6px;
+    padding-bottom: calc(6px + env(safe-area-inset-bottom));
+  }
+
+  .mobile-tool-row .tool-button,
+  .mobile-tool-row .dock-action-button {
+    flex-basis: 68px;
+    min-height: 50px;
+    font-size: 10px;
+  }
+
+  .mobile-tool-row .tool-icon {
+    width: 26px;
+    height: 26px;
+    flex-basis: 26px;
+  }
+
+  .mobile-preset-row .preset-button {
+    flex-basis: 64px;
+    min-height: 38px;
+  }
+
+  #field {
+    width: min(100%, 78dvh);
   }
 }
 
