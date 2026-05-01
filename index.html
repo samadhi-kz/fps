@@ -127,6 +127,10 @@
 
         <section class="panel notes-panel">
           <div class="panel-title">Play Notes</div>
+          <div id="bookNoteLabel" class="book-note-label">
+            <div class="book-note-item"><span class="book-note-title">Book</span>: <span id="bookNoteName">My Play Book</span></div>
+            <div class="book-note-item"><span class="book-note-title">Play</span>: <span id="playNoteName">New Play</span></div>
+          </div>
           <textarea id="playNotes" class="text-area" rows="3" placeholder="Notes"></textarea>
         </section>
 
@@ -149,7 +153,8 @@
 
       <section class="workspace">
         <div class="topbar">
-          <div>
+          <div class="title-group">
+            <div id="folderLabel" class="folder-label">My Play Book</div>
             <h2 id="titleLabel">New Play</h2>
           </div>
           <div id="statusText" class="status" role="status" aria-live="polite">Ready</div>

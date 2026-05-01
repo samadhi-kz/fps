@@ -366,6 +366,11 @@ function drawText() {
 function drawMeta() {
   layers.meta.replaceChildren();
   const metaX = 790;
+  const bookName = activeFolder()?.name || 'My Play Book';
+  const bookLabel = svgEl('text', { class: 'meta-book-label', x: metaX, y: 268 });
+  bookLabel.textContent = bookName;
+  layers.meta.append(bookLabel);
+
   const title = svgEl('text', { class: 'meta-title', x: metaX, y: 292 });
   title.textContent = state.playName;
   layers.meta.append(title);
@@ -455,6 +460,15 @@ function syncSelectionControls() {
 
 function render() {
   controls.titleLabel.textContent = state.playName;
+  const folderName = activeFolder()?.name || '';
+  controls.folderLabel.textContent = folderName;
+  controls.folderLabel.style.display = folderName ? 'block' : 'none';
+  if (controls.bookNoteName) {
+    controls.bookNoteName.textContent = folderName || 'My Play Book';
+  }
+  if (controls.playNoteName) {
+    controls.playNoteName.textContent = state.playName || 'New Play';
+  }
   controls.snapToggle.checked = state.snap;
   syncPlayerSizeControl();
   syncEndCapSizeControl();

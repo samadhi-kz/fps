@@ -510,6 +510,31 @@ select {
   font-weight: 800;
 }
 
+.book-note-label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  display: grid;
+  gap: 4px;
+}
+
+.book-note-item {
+  display: flex;
+  gap: 4px;
+  align-items: baseline;
+}
+
+.book-note-title {
+  color: var(--muted);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.book-note-label span {
+  color: var(--ink);
+}
+
 .file-badge {
   min-height: 38px;
   display: flex;
@@ -600,6 +625,20 @@ select {
 
 .topbar {
   min-height: 58px;
+}
+
+.title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.folder-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .status {
@@ -846,6 +885,14 @@ select {
   fill: #111;
   font-size: 24px;
   font-weight: 900;
+}
+
+.meta-book-label {
+  fill: #626b76;
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .meta-notes-label {
@@ -1157,8 +1204,16 @@ select {
     background: #fff;
   }
 
-  .sidebar,
+  .sidebar {
+    display: none;
+  }
+
   .topbar {
+    display: block;
+    margin-bottom: 12px;
+  }
+
+  .topbar .status {
     display: none;
   }
 

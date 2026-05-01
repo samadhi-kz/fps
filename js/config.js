@@ -152,6 +152,9 @@ const controls = {
   selectedText: document.querySelector('#selectedText'),
   selectionBadge: document.querySelector('#selectionBadge'),
   playsetFileName: document.querySelector('#playsetFileName'),
+  folderLabel: document.querySelector('#folderLabel'),
+  bookNoteName: document.querySelector('#bookNoteName'),
+  playNoteName: document.querySelector('#playNoteName'),
   playsetFileHint: document.querySelector('#playsetFileHint'),
   playsetFileInput: document.querySelector('#playsetFileInput'),
   savePlaysetFileBtn: document.querySelector('#savePlaysetFileBtn'),
@@ -169,6 +172,8 @@ const controls = {
   titleLabel: document.querySelector('#titleLabel'),
   markList: document.querySelector('#markList'),
   statusText: document.querySelector('#statusText'),
+  bookNoteName: document.querySelector('#bookNoteName'),
+  playNoteName: document.querySelector('#playNoteName'),
   endCap: document.querySelector('#endCap'),
   snapToggle: document.querySelector('#snapToggle')
 };
