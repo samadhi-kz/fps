@@ -273,6 +273,10 @@ document.addEventListener('keydown', (event) => {
     deleteSelectedItem();
   }
   if (event.key === 'Escape') {
+    if (isFocusMode()) {
+      setFocusMode(false);
+      return;
+    }
     state.routeDraft = null;
     state.drag = null;
     state.selectedId = null;
@@ -297,20 +301,103 @@ window.addEventListener('resize', () => {
   if (resizeRenderFrame) window.cancelAnimationFrame(resizeRenderFrame);
   resizeRenderFrame = window.requestAnimationFrame(() => {
     resizeRenderFrame = null;
+    if (isFocusMode() && !isMobileLayout()) setFocusMode(false);
+    else if (isFocusMode()) clampFocusDock();
     render();
   });
 });
 
+const mobileDock = document.querySelector('.mobile-dock');
+const mobileDockHandle = document.querySelector('.mobile-dock-handle');
+let focusDockDrag = null;
+
 window.addEventListener('fullscreenchange', () => {
-  const isFullscreen = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
-  const label = isFullscreen ? 'Exit Fullscreen' : 'Fullscreen';
-  document.querySelectorAll('[data-action="toggle-fullscreen"]').forEach((button) => {
-    button.title = label;
-  });
-  setStatus(label);
+  syncFullscreenButtons();
+  setStatus(isFullViewActive() ? 'Exit Fullscreen' : 'Fullscreen');
 });
 
+function isMobileLayout() {
+  return window.matchMedia?.('(max-width: 860px)').matches || window.innerWidth <= 860;
+}
+
+function isFocusMode() {
+  return document.body.classList.contains('is-focus-mode');
+}
+
+function isFullViewActive() {
+  return isFocusMode() || Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+}
+
+function syncFullscreenButtons() {
+  const active = isFullViewActive();
+  document.querySelectorAll('[data-action="toggle-fullscreen"]').forEach((button) => {
+    button.title = active ? 'Exit full view' : 'Full view';
+    const label = button.querySelector('span:last-child');
+    if (label && label !== button.querySelector('.tool-icon')) {
+      label.textContent = active ? 'Exit' : 'Full';
+    } else {
+      button.textContent = active ? 'Exit Fullscreen' : 'Fullscreen';
+    }
+  });
+}
+
+function clampFocusDockPosition(left, top) {
+  const rect = mobileDock.getBoundingClientRect();
+  const width = rect.width || 320;
+  const height = rect.height || 120;
+  return {
+    left: clamp(left, 8, Math.max(8, window.innerWidth - width - 8)),
+    top: clamp(top, 8, Math.max(8, window.innerHeight - height - 8))
+  };
+}
+
+function setFocusDockPosition(left, top) {
+  const next = clampFocusDockPosition(left, top);
+  mobileDock.style.left = `${next.left}px`;
+  mobileDock.style.top = `${next.top}px`;
+}
+
+function placeFocusDockDefault() {
+  window.requestAnimationFrame(() => {
+    const rect = mobileDock.getBoundingClientRect();
+    setFocusDockPosition(
+      Math.max(8, window.innerWidth - rect.width - 10),
+      Math.max(8, window.innerHeight - rect.height - 12)
+    );
+    const wrap = document.querySelector('.canvas-wrap');
+    if (wrap) {
+      wrap.scrollLeft = Math.max(0, (wrap.scrollWidth - wrap.clientWidth) / 2);
+      wrap.scrollTop = 0;
+    }
+  });
+}
+
+function clampFocusDock() {
+  if (!mobileDock) return;
+  const rect = mobileDock.getBoundingClientRect();
+  setFocusDockPosition(rect.left, rect.top);
+}
+
+function setFocusMode(enabled) {
+  document.body.classList.toggle('is-focus-mode', enabled);
+  if (enabled) {
+    placeFocusDockDefault();
+    setStatus('Focus Mode');
+  } else {
+    mobileDock.style.left = '';
+    mobileDock.style.top = '';
+    setStatus('準備OK');
+  }
+  syncFullscreenButtons();
+  render();
+}
+
 function toggleFullscreen() {
+  if (isMobileLayout()) {
+    setFocusMode(!isFocusMode());
+    return;
+  }
+
   const el = document.documentElement;
   const isFullscreen = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
   if (isFullscreen) {
@@ -322,4 +409,31 @@ function toggleFullscreen() {
   else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
 }
 
+mobileDockHandle?.addEventListener('pointerdown', (event) => {
+  if (!isFocusMode()) return;
+  event.preventDefault();
+  const rect = mobileDock.getBoundingClientRect();
+  focusDockDrag = {
+    pointerId: event.pointerId,
+    dx: event.clientX - rect.left,
+    dy: event.clientY - rect.top
+  };
+  mobileDockHandle.setPointerCapture?.(event.pointerId);
+});
+
+mobileDockHandle?.addEventListener('pointermove', (event) => {
+  if (!focusDockDrag || focusDockDrag.pointerId !== event.pointerId) return;
+  event.preventDefault();
+  setFocusDockPosition(event.clientX - focusDockDrag.dx, event.clientY - focusDockDrag.dy);
+});
+
+function endFocusDockDrag(event) {
+  if (!focusDockDrag || focusDockDrag.pointerId !== event.pointerId) return;
+  focusDockDrag = null;
+}
+
+mobileDockHandle?.addEventListener('pointerup', endFocusDockDrag);
+mobileDockHandle?.addEventListener('pointercancel', endFocusDockDrag);
+
+syncFullscreenButtons();
 loadInitialState();

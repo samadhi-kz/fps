@@ -408,6 +408,10 @@ function moveRoute(route, dx, dy) {
   route.points = route.points.map((point) => clampPoint([point[0] + dx, point[1] + dy]));
 }
 
+function focusModeCanvasWrap() {
+  return document.body.classList.contains('is-focus-mode') ? document.querySelector('.canvas-wrap') : null;
+}
+
 function captureFieldPointer(event) {
   if (!field.setPointerCapture || field.hasPointerCapture?.(event.pointerId)) return;
   try {
@@ -421,6 +425,19 @@ function handlePointerDown(event) {
   const hit = targetFromEvent(event);
   const point = pointFromEvent(event);
   captureFieldPointer(event);
+
+  if (focusModeCanvasWrap() && state.tool === 'select' && !hit) {
+    const wrap = focusModeCanvasWrap();
+    state.drag = {
+      kind: 'focus-pan',
+      startX: event.clientX,
+      startY: event.clientY,
+      scrollLeft: wrap.scrollLeft,
+      scrollTop: wrap.scrollTop
+    };
+    setStatus('Pan');
+    return;
+  }
 
   if (state.routeDraft?.input === 'poly') {
     addPolylinePoint(point);
@@ -504,6 +521,14 @@ function handlePointerMove(event) {
 
   const point = pointFromEvent(event);
 
+  if (state.drag.kind === 'focus-pan') {
+    const wrap = focusModeCanvasWrap();
+    if (!wrap) return;
+    wrap.scrollLeft = state.drag.scrollLeft - (event.clientX - state.drag.startX);
+    wrap.scrollTop = state.drag.scrollTop - (event.clientY - state.drag.startY);
+    return;
+  }
+
   if (state.drag.kind === 'route-point') {
     const route = state.routes.find((item) => item.id === state.drag.id);
     if (!route) return;
@@ -533,6 +558,12 @@ function handlePointerMove(event) {
 }
 
 function handlePointerUp(event) {
+  if (state.drag?.kind === 'focus-pan') {
+    state.drag = null;
+    setStatus('準備OK');
+    return;
+  }
+
   if (state.drag?.kind === 'draw-route') {
     if (state.drag.moved) finishRoute();
     else startPolylineFromDraft(event);
@@ -549,7 +580,7 @@ function handlePointerUp(event) {
 }
 
 function cancelPointerInteraction() {
-  const shouldSave = Boolean(state.drag && !state.routeDraft);
+  const shouldSave = Boolean(state.drag && !state.routeDraft && state.drag.kind !== 'focus-pan');
   const hadDraft = Boolean(state.routeDraft);
   state.drag = null;
   state.routeDraft = null;

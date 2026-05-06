@@ -763,6 +763,10 @@ select {
   transform: translateZ(0);
 }
 
+.mobile-dock-handle {
+  display: none;
+}
+
 .print-page {
   break-after: page;
   page-break-after: always;
@@ -1198,6 +1202,87 @@ select {
     box-shadow: 0 -14px 34px rgba(20, 30, 45, .18), inset 0 1px 0 rgba(255, 255, 255, .78);
     -webkit-backdrop-filter: blur(14px) saturate(1.12);
     backdrop-filter: blur(14px) saturate(1.12);
+  }
+
+  body.is-focus-mode {
+    overflow: hidden;
+    padding-bottom: 0;
+  }
+
+  body.is-focus-mode .sidebar {
+    visibility: hidden;
+  }
+
+  body.is-focus-mode .workspace {
+    position: fixed;
+    inset: 0;
+    z-index: 25;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr);
+    padding: 6px;
+    border: 0;
+    background: #f7f8fa;
+    box-shadow: none;
+  }
+
+  body.is-focus-mode .topbar {
+    display: none;
+  }
+
+  body.is-focus-mode .canvas-wrap {
+    display: block;
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  body.is-focus-mode .canvas-wrap::-webkit-scrollbar {
+    display: none;
+  }
+
+  body.is-focus-mode #field {
+    display: block;
+    width: min(170dvw, calc(100dvh * 1000 / 720));
+    max-width: none;
+    max-height: none;
+    margin: 0 auto;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  body.is-focus-mode .mobile-dock {
+    right: auto;
+    bottom: auto;
+    left: 10px;
+    top: 10px;
+    width: min(360px, calc(100dvw - 20px));
+    max-width: calc(100dvw - 20px);
+    padding: 6px;
+    border: 1px solid rgba(0, 104, 95, .26);
+    border-radius: 12px;
+    background: rgba(231, 244, 243, .88);
+    box-shadow: 0 16px 38px rgba(20, 30, 45, .22);
+  }
+
+  body.is-focus-mode .mobile-dock-handle {
+    display: grid;
+    min-height: 22px;
+    place-items: center;
+    border: 0;
+    border-radius: 8px;
+    background: rgba(0, 104, 95, .12);
+    color: var(--teal-dark);
+    cursor: grab;
+    font-size: 16px;
+    font-weight: 900;
+    letter-spacing: 0;
+    touch-action: none;
+  }
+
+  body.is-focus-mode .mobile-dock-handle:active {
+    cursor: grabbing;
   }
 
   .mobile-tool-row,
