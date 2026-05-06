@@ -331,13 +331,13 @@ function updateRouteMode(mode) {
   const route = activeRoute();
   if (route) {
     route.mode = cleanMode;
-    saveLocal(false);
+    saveLocal(false, { historyKey: `route-mode-${route.id}` });
     render();
     setStatus('Route Shape');
     return;
   }
   state.routeMode = cleanMode;
-  saveLocal(false);
+  saveLocal(false, { historyKey: 'route-mode-default' });
   syncRouteShapeControl();
   setStatus('Route Default');
 }
@@ -552,7 +552,7 @@ function updateLineStyle(partialStyle) {
   const route = activeRoute();
   if (route) {
     Object.assign(route, normalizeRouteStyle({ ...route, ...partialStyle }));
-    saveLocal(false);
+    saveLocal(false, { historyKey: `line-style-${route.id}` });
     drawRoutes();
     syncLineStyleControls();
     setStatus('Line Style');
@@ -560,7 +560,7 @@ function updateLineStyle(partialStyle) {
   }
 
   state.routeStyle = normalizeRouteStyle({ ...state.routeStyle, ...partialStyle });
-  saveLocal(false);
+  saveLocal(false, { historyKey: 'line-style-default' });
   drawTemp();
   syncLineStyleControls();
   setStatus('Line Default');

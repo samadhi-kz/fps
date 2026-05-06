@@ -326,8 +326,113 @@ function updateActivePlay() {
   else folder.plays[index] = play;
 }
 
-function saveLocal(showStatus = false) {
+function historySnapshot() {
   syncPlaybookState();
+  return {
+    playbook: cloneData(state.playbook),
+    openFolderIds: Array.from(state.openFolderIds)
+  };
+}
+
+function historyFingerprint(snapshot) {
+  return JSON.stringify(snapshot, (key, value) => (key === 'updatedAt' ? undefined : value));
+}
+
+function resetHistory() {
+  const snapshot = historySnapshot();
+  state.undoStack = [snapshot];
+  state.redoStack = [];
+  state.historyFingerprint = historyFingerprint(snapshot);
+  state.historyLastKey = '';
+  state.historyLastAt = 0;
+}
+
+function recordHistory(options = {}) {
+  if (state.isRestoringHistory) return;
+  const snapshot = historySnapshot();
+  const fingerprint = historyFingerprint(snapshot);
+  if (fingerprint === state.historyFingerprint) return;
+
+  const now = Date.now();
+  const historyKey = options.historyKey || '';
+  const canCoalesce = historyKey
+    && state.historyLastKey === historyKey
+    && now - state.historyLastAt <= HISTORY_COALESCE_MS
+    && state.undoStack.length > 1;
+
+  if (canCoalesce) {
+    state.undoStack[state.undoStack.length - 1] = snapshot;
+  } else {
+    state.undoStack.push(snapshot);
+    if (state.undoStack.length > HISTORY_LIMIT) state.undoStack.shift();
+  }
+
+  state.redoStack = [];
+  state.historyFingerprint = fingerprint;
+  state.historyLastKey = historyKey;
+  state.historyLastAt = now;
+}
+
+function restoreHistorySnapshot(snapshot) {
+  state.isRestoringHistory = true;
+  state.playbook = normalizePlaybook(cloneData(snapshot.playbook));
+  state.activeFolderId = state.playbook.activeFolderId;
+  state.activePlayId = state.playbook.activePlayId;
+
+  const folderIds = new Set(state.playbook.folders.map((folder) => folder.id));
+  const openFolderIds = (snapshot.openFolderIds || []).filter((folderId) => folderIds.has(folderId));
+  state.openFolderIds = new Set(openFolderIds);
+  if (state.activeFolderId) state.openFolderIds.add(state.activeFolderId);
+
+  const play = activePlay();
+  if (play) applyPlay(play);
+  else clearActivePlayView(activeFolder()?.name ? `${activeFolder().name} Empty` : 'No Play Selected');
+  state.isRestoringHistory = false;
+}
+
+function undoHistory() {
+  const current = historySnapshot();
+  if (historyFingerprint(current) !== state.historyFingerprint) {
+    state.undoStack.push(current);
+    if (state.undoStack.length > HISTORY_LIMIT) state.undoStack.shift();
+  }
+
+  if (state.undoStack.length <= 1) {
+    setStatus('Undoなし');
+    return false;
+  }
+
+  const snapshot = state.undoStack.pop();
+  state.redoStack.push(snapshot);
+  const previous = state.undoStack[state.undoStack.length - 1];
+  restoreHistorySnapshot(previous);
+  state.historyFingerprint = historyFingerprint(previous);
+  state.historyLastKey = '';
+  state.historyLastAt = 0;
+  setStatus('Undo');
+  return true;
+}
+
+function redoHistory() {
+  if (!state.redoStack.length) {
+    setStatus('Redoなし');
+    return false;
+  }
+
+  const snapshot = state.redoStack.pop();
+  state.undoStack.push(snapshot);
+  if (state.undoStack.length > HISTORY_LIMIT) state.undoStack.shift();
+  restoreHistorySnapshot(snapshot);
+  state.historyFingerprint = historyFingerprint(snapshot);
+  state.historyLastKey = '';
+  state.historyLastAt = 0;
+  setStatus('Redo');
+  return true;
+}
+
+function saveLocal(showStatus = false, options = {}) {
+  syncPlaybookState();
+  if (options.recordHistory !== false) recordHistory(options);
   if (showStatus) setStatus('Updated');
   renderPlaybookSelectors();
   syncPlaysetFileBadge();
@@ -398,4 +503,5 @@ function loadInitialState() {
   syncPlaybookState();
   renderPlaybookSelectors();
   syncPlaysetFileBadge();
+  resetHistory();
 }

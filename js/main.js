@@ -51,7 +51,7 @@ controls.endCap.addEventListener('change', () => {
   const route = state.routes.find((item) => item.id === state.selectedId);
   if (!route) return;
   route.end = controls.endCap.value;
-  saveLocal(false);
+  saveLocal(false, { historyKey: `route-end-${route.id}` });
   render();
 });
 
@@ -74,14 +74,14 @@ controls.defenseToggle.addEventListener('change', () => {
 controls.playerSize.addEventListener('input', () => {
   state.playerSize = normalizePlayerSize(controls.playerSize.value);
   syncPlayerSizeControl();
-  saveLocal(false);
+  saveLocal(false, { historyKey: 'player-size' });
   drawPlayers();
 });
 
 controls.endCapSize.addEventListener('input', () => {
   state.endCapSize = normalizeEndCapSize(controls.endCapSize.value);
   syncEndCapSizeControl();
-  saveLocal(false);
+  saveLocal(false, { historyKey: 'end-cap-size' });
   drawRoutes();
 });
 
@@ -111,7 +111,7 @@ document.querySelectorAll('[data-formation]').forEach((button) => {
 
 controls.playNotes.addEventListener('input', () => {
   state.notes = controls.playNotes.value;
-  saveLocal(false);
+  saveLocal(false, { historyKey: 'play-notes' });
   render();
 });
 
@@ -120,7 +120,7 @@ controls.selectedText.addEventListener('input', () => {
   const note = state.annotations.find((item) => item.id === state.selectedId);
   if (!note) return;
   note.text = controls.selectedText.value;
-  saveLocal(false);
+  saveLocal(false, { historyKey: `annotation-${note.id}` });
   drawText();
 });
 
@@ -155,6 +155,41 @@ document.querySelector('#pdfBookBtn').addEventListener('click', exportPlaybookPd
 
 document.addEventListener('keydown', (event) => {
   const isTextEditing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName);
+  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'z') {
+    if (!isTextEditing) {
+      event.preventDefault();
+      if (state.routeDraft?.input === 'poly') {
+        if (state.routeDraft.points.length > 1) {
+          state.routeDraft.points.pop();
+          drawTemp();
+          setStatus('Point Undo');
+        } else {
+          state.routeDraft = null;
+          state.drag = null;
+          render();
+          setStatus('Cancelled');
+        }
+        return;
+      }
+      if (state.routeDraft) {
+        state.routeDraft = null;
+        state.drag = null;
+        render();
+        setStatus('Cancelled');
+        return;
+      }
+      if (event.shiftKey) redoHistory();
+      else undoHistory();
+    }
+    return;
+  }
+  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'y') {
+    if (!isTextEditing) {
+      event.preventDefault();
+      redoHistory();
+    }
+    return;
+  }
   if (state.routeDraft?.input === 'poly' && !isTextEditing) {
     if (event.key === 'Enter') {
       event.preventDefault();

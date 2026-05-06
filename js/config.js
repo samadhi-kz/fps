@@ -2,6 +2,8 @@
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const DRAW_TOOLS = ['route', 'draw', 'motion', 'pass', 'block'];
 const PLAYBOOK_FORMAT_VERSION = 1;
+const HISTORY_LIMIT = 80;
+const HISTORY_COALESCE_MS = 2500;
 
 function cloneData(value) {
   return JSON.parse(JSON.stringify(value));
@@ -241,7 +243,13 @@ const state = {
   treeDrag: null,
   suppressTreeClick: false,
   pendingPreset: null,
-  printCleanup: null
+  printCleanup: null,
+  undoStack: [],
+  redoStack: [],
+  historyFingerprint: '',
+  historyLastKey: '',
+  historyLastAt: 0,
+  isRestoringHistory: false
 };
 
 const field = document.querySelector('#field');

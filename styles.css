@@ -378,7 +378,7 @@ select {
 .tree-label {
   display: flex;
   min-width: 0;
-  align-items: center;
+  align-items: flex-start;
   gap: 6px;
   padding: 6px 4px;
   text-align: left;
@@ -396,14 +396,18 @@ select {
 .tree-icon {
   width: 16px;
   flex: 0 0 16px;
+  margin-top: 1px;
   color: var(--muted);
   text-align: center;
 }
 
 .tree-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.25;
 }
 
 .tree-children {

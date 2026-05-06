@@ -347,6 +347,43 @@ function textLength(text) {
   return Array.from(String(text || '')).length;
 }
 
+function approximateSvgTextWidth(text, fontSize = 16) {
+  return Array.from(String(text || '')).reduce((total, char) => {
+    if (/\s/.test(char)) return total + fontSize * 0.32;
+    return total + fontSize * (/^[\x00-\x7F]$/.test(char) ? 0.58 : 1);
+  }, 0);
+}
+
+function createSvgTextMeasurer(sourceElement) {
+  const measurer = svgEl('text', {
+    x: -10000,
+    y: -10000,
+    visibility: 'hidden',
+    'aria-hidden': 'true'
+  });
+  const className = sourceElement.getAttribute('class');
+  const style = sourceElement.getAttribute('style');
+  if (className) measurer.setAttribute('class', className);
+  if (style) measurer.setAttribute('style', style);
+  field.append(measurer);
+
+  const computed = window.getComputedStyle ? window.getComputedStyle(measurer) : null;
+  const fontSize = Number.parseFloat(computed?.fontSize) || 16;
+  return {
+    measure(value) {
+      measurer.textContent = String(value || '');
+      try {
+        return measurer.getComputedTextLength();
+      } catch {
+        return approximateSvgTextWidth(value, fontSize);
+      }
+    },
+    remove() {
+      measurer.remove();
+    }
+  };
+}
+
 function splitLongText(text, maxChars) {
   const chars = Array.from(String(text || ''));
   const chunks = [];
@@ -388,6 +425,71 @@ function wrapParagraph(text, maxChars) {
   return lines;
 }
 
+function splitLongTextByWidth(text, measure, maxWidth) {
+  const chunks = [];
+  let current = '';
+  Array.from(String(text || '')).forEach((char) => {
+    const candidate = `${current}${char}`;
+    if (!current || measure(candidate) <= maxWidth) {
+      current = candidate;
+      return;
+    }
+    chunks.push(current);
+    current = char;
+  });
+  if (current) chunks.push(current);
+  return chunks;
+}
+
+function wrapParagraphByWidth(text, measure, maxWidth) {
+  const words = String(text || '').trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return [''];
+
+  const lines = [];
+  let current = '';
+  words.forEach((word) => {
+    if (measure(word) > maxWidth) {
+      if (current) {
+        lines.push(current);
+        current = '';
+      }
+      const chunks = splitLongTextByWidth(word, measure, maxWidth);
+      lines.push(...chunks.slice(0, -1));
+      current = chunks[chunks.length - 1] || '';
+      return;
+    }
+
+    const candidate = current ? `${current} ${word}` : word;
+    if (!current || measure(candidate) <= maxWidth) {
+      current = candidate;
+      return;
+    }
+
+    lines.push(current);
+    current = word;
+  });
+
+  if (current) lines.push(current);
+  return lines;
+}
+
+function ellipsizeLineByWidth(text, measure, maxWidth) {
+  const ellipsis = '...';
+  const chars = Array.from(String(text || '').trimEnd());
+  while (chars.length && measure(`${chars.join('')}${ellipsis}`) > maxWidth) {
+    chars.pop();
+  }
+  return `${chars.join('').trimEnd()}${ellipsis}`;
+}
+
+function wrapTextLinesByWidth(text, measure, maxWidth, maxLines) {
+  const lines = String(text || '').split(/\n/).flatMap((line) => wrapParagraphByWidth(line, measure, maxWidth));
+  if (!Number.isFinite(maxLines) || lines.length <= maxLines) return lines;
+  const clipped = lines.slice(0, maxLines);
+  clipped[clipped.length - 1] = ellipsizeLineByWidth(clipped[clipped.length - 1], measure, maxWidth);
+  return clipped;
+}
+
 function wrapTextLines(text, maxChars, maxLines) {
   const lines = String(text || '').split(/\n/).flatMap((line) => wrapParagraph(line, maxChars));
   if (!Number.isFinite(maxLines) || lines.length <= maxLines) return lines;
@@ -401,14 +503,25 @@ function wrapTextLines(text, maxChars, maxLines) {
 
 function appendMultilineText(textElement, text, x, lineHeight = 28, options = {}) {
   const maxLines = options.maxLines || 5;
-  const lines = options.maxChars
-    ? wrapTextLines(text, options.maxChars, maxLines)
-    : String(text || '').split(/\n/).slice(0, maxLines);
+  let lines;
+  if (options.maxWidth) {
+    const measurer = createSvgTextMeasurer(textElement);
+    try {
+      lines = wrapTextLinesByWidth(text, measurer.measure, options.maxWidth, maxLines);
+    } finally {
+      measurer.remove();
+    }
+  } else {
+    lines = options.maxChars
+      ? wrapTextLines(text, options.maxChars, maxLines)
+      : String(text || '').split(/\n/).slice(0, maxLines);
+  }
   lines.forEach((line, index) => {
     const tspan = svgEl('tspan', { x, dy: index === 0 ? 0 : lineHeight });
     tspan.textContent = line;
     textElement.append(tspan);
   });
+  return lines.length;
 }
 
 function drawText() {
@@ -430,22 +543,28 @@ function drawText() {
 function drawMeta() {
   layers.meta.replaceChildren();
   const metaX = 790;
+  const metaWidth = 186;
+  let y = 268;
   const bookName = activeFolder()?.name || 'My Play Book';
-  const bookLabel = svgEl('text', { class: 'meta-book-label', x: metaX, y: 268 });
-  bookLabel.textContent = bookName;
+  const bookLabel = svgEl('text', { class: 'meta-book-label', x: metaX, y });
+  const bookLines = appendMultilineText(bookLabel, bookName, metaX, 16, { maxWidth: metaWidth, maxLines: 2 });
   layers.meta.append(bookLabel);
+  y += bookLines * 16 + 8;
 
-  const title = svgEl('text', { class: 'meta-title', x: metaX, y: 292 });
-  title.textContent = state.playName;
+  const title = svgEl('text', { class: 'meta-title', x: metaX, y });
+  const titleLines = appendMultilineText(title, state.playName, metaX, 28, { maxWidth: metaWidth, maxLines: 3 });
   layers.meta.append(title);
+  y += titleLines * 28 + 18;
 
   if (state.notes) {
-    const notesLabel = svgEl('text', { class: 'meta-notes-label', x: metaX, y: 330 });
+    const notesLabel = svgEl('text', { class: 'meta-notes-label', x: metaX, y });
     notesLabel.textContent = 'Play Notes';
     layers.meta.append(notesLabel);
 
-    const notes = svgEl('text', { class: 'meta-notes', x: metaX, y: 356 });
-    appendMultilineText(notes, state.notes, metaX, 23, { maxChars: 24, maxLines: 14 });
+    y += 26;
+    const notes = svgEl('text', { class: 'meta-notes', x: metaX, y });
+    const maxNoteLines = Math.min(14, Math.max(3, Math.floor((690 - y) / 23) + 1));
+    appendMultilineText(notes, state.notes, metaX, 23, { maxWidth: metaWidth, maxLines: maxNoteLines });
     layers.meta.append(notes);
   }
 }

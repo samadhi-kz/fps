@@ -142,6 +142,7 @@ async function loadPlaysetFromText(text, fileName = '', fileHandle = null) {
     else clearActivePlayView('No Play Selected');
     saveLocal(false);
     syncPlaysetFileBadge();
+    resetHistory();
     setStatus(fileName ? `${fileName} Loaded` : 'Load Complete');
   } catch (error) {
     handleFileError(error, '読込');
