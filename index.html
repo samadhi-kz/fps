@@ -56,6 +56,23 @@
           </div>
         </section>
 
+        <section class="panel defense-formation-panel">
+          <div class="panel-title">Defense Formation</div>
+          <div class="formation-grid" aria-label="Defense formations">
+            <button class="formation-button" type="button" data-defense-formation="normal">Normal</button>
+            <button class="formation-button" type="button" data-defense-formation="man0">Man 0</button>
+            <button class="formation-button" type="button" data-defense-formation="oneDeep">1 Deep</button>
+            <button class="formation-button" type="button" data-defense-formation="cover2">Cover 2</button>
+            <button class="formation-button" type="button" data-defense-formation="cover3">Cover 3</button>
+            <button class="formation-button" type="button" data-defense-formation="boxZone">Box Zone</button>
+            <button class="formation-button" type="button" data-defense-formation="goalLine">Goal Line</button>
+            <button class="formation-button" type="button" data-defense-formation="prevent">Prevent</button>
+          </div>
+          <div class="action-row formation-actions">
+            <button class="wide-button" type="button" data-action="toggle-defense-visible">Hide D</button>
+          </div>
+        </section>
+
         <section class="panel drawing-tools-panel">
           <div class="panel-title">Tools</div>
           <div class="segmented" role="group" aria-label="Tools">
@@ -100,6 +117,9 @@
           <div class="action-row tool-actions">
             <button class="wide-button" type="button" data-action="finish-route" disabled>Done</button>
             <button class="wide-button danger" type="button" data-action="delete-selected" disabled>Delete</button>
+          </div>
+          <div class="action-row tool-actions">
+            <button class="wide-button danger" type="button" data-action="clear-routes" disabled>Clear Lines</button>
             <button class="wide-button" type="button" data-action="toggle-fullscreen">Fullscreen</button>
           </div>
           <label class="check-row">
@@ -134,10 +154,6 @@
             <input id="lineOpacity" type="range" min="0.2" max="1" step="0.05" value="1">
             <output id="lineOpacityValue" for="lineOpacity">1.00</output>
           </label>
-          <div class="action-row tool-actions">
-            <button id="flipBtn" class="wide-button" type="button" data-action="flip-play">Flip H</button>
-            <button id="clearRoutesBtn" class="wide-button" type="button">Clear Lines</button>
-          </div>
         </section>
 
         <section class="panel selection-panel">
@@ -218,6 +234,7 @@
         <button class="dock-action-button mobile-redo-button" type="button" data-action="redo-history" title="Redo" aria-disabled="true"><span class="tool-icon">↷</span><span>Redo</span></button>
         <button class="dock-action-button mobile-finish-button" type="button" data-action="finish-route" title="Finish current line" disabled><span class="tool-icon">✓</span><span>Done</span></button>
         <button class="dock-action-button danger mobile-delete-button" type="button" data-action="delete-selected" title="Delete selected line or comment" disabled><span class="tool-icon">⌫</span><span>Delete</span></button>
+        <button class="dock-action-button danger mobile-clear-button" type="button" data-action="clear-routes" title="Clear all lines" disabled><span class="tool-icon">×</span><span>Clear</span></button>
         <button class="dock-action-button" type="button" data-action="toggle-fullscreen" title="Toggle fullscreen"><span class="tool-icon">⬜</span><span>Full</span></button>
       </div>
       <div class="mobile-preset-row" aria-label="Route presets">

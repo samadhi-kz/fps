@@ -61,14 +61,7 @@ controls.snapToggle.addEventListener('change', () => {
 });
 
 controls.defenseToggle.addEventListener('change', () => {
-  state.defenseVisible = controls.defenseToggle.checked;
-  if (!state.defenseVisible && state.selectedType === 'defender') {
-    state.selectedId = null;
-    state.selectedType = null;
-  }
-  saveLocal(false);
-  render();
-  setStatus(state.defenseVisible ? 'Defense ON' : 'Defense OFF');
+  setDefenseVisible(controls.defenseToggle.checked);
 });
 
 controls.playerSize.addEventListener('input', () => {
@@ -107,6 +100,10 @@ document.querySelectorAll('[data-preset]').forEach((button) => {
 
 document.querySelectorAll('[data-formation]').forEach((button) => {
   button.addEventListener('click', () => applyOffenseFormation(button.dataset.formation));
+});
+
+document.querySelectorAll('[data-defense-formation]').forEach((button) => {
+  button.addEventListener('click', () => applyDefenseFormation(button.dataset.defenseFormation));
 });
 
 controls.playNotes.addEventListener('input', () => {
@@ -169,13 +166,16 @@ function bindTouchFriendlyCommand(selector, handler) {
 
 bindTouchFriendlyCommand('[data-action="undo-history"]', undoCommand);
 bindTouchFriendlyCommand('[data-action="redo-history"]', redoCommand);
+bindTouchFriendlyCommand('[data-action="clear-routes"]', clearRoutes);
+document.querySelectorAll('[data-action="toggle-defense-visible"]').forEach((button) => {
+  button.addEventListener('click', toggleDefenseVisible);
+});
 document.querySelectorAll('[data-action="toggle-fullscreen"]').forEach((button) => {
   button.addEventListener('click', toggleFullscreen);
 });
 document.querySelectorAll('[data-action="flip-play"]').forEach((button) => {
   button.addEventListener('click', flipPlay);
 });
-document.querySelector('#clearRoutesBtn').addEventListener('click', clearRoutes);
 document.querySelector('#openPlaysetBtn').addEventListener('click', openPlaysetFile);
 document.querySelector('#savePlaysetFileBtn').addEventListener('click', savePlaysetFile);
 document.querySelector('#savePlaysetAsBtn').addEventListener('click', savePlaysetAs);

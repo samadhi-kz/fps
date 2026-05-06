@@ -620,6 +620,7 @@ function drawMarkControls() {
 
 function syncDockActionButtons() {
   const canDeleteFromDock = state.selectedType === 'route' || state.selectedType === 'annotation';
+  const canClearRoutes = state.routes.length > 0;
   const canFinishRoute = state.routeDraft?.input === 'poly'
     && state.routeDraft.points.length >= 2
     && routeLength(state.routeDraft.points) > 20;
@@ -634,8 +635,18 @@ function syncDockActionButtons() {
   document.querySelectorAll('[data-action="delete-selected"]').forEach((button) => {
     button.disabled = !canDeleteFromDock;
   });
+  document.querySelectorAll('[data-action="clear-routes"]').forEach((button) => {
+    button.disabled = !canClearRoutes;
+  });
   document.querySelectorAll('[data-action="finish-route"]').forEach((button) => {
     button.disabled = !canFinishRoute;
+  });
+}
+
+function syncDefenseVisibilityControls() {
+  document.querySelectorAll('[data-action="toggle-defense-visible"]').forEach((button) => {
+    button.textContent = state.defenseVisible ? 'Hide D' : 'Show D';
+    button.title = state.defenseVisible ? 'Hide defense' : 'Show defense';
   });
 }
 
@@ -662,6 +673,7 @@ function render() {
   }
   controls.snapToggle.checked = state.snap;
   controls.defenseToggle.checked = state.defenseVisible;
+  syncDefenseVisibilityControls();
   syncPlayerSizeControl();
   syncEndCapSizeControl();
   syncLineStyleControls();

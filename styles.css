@@ -1086,32 +1086,36 @@ select {
     order: 2;
   }
 
-  .drawing-tools-panel {
+  .defense-formation-panel {
     order: 3;
   }
 
-  .selection-panel {
+  .drawing-tools-panel {
     order: 4;
   }
 
-  .notes-panel {
+  .selection-panel {
     order: 5;
   }
 
-  .marks-panel {
+  .notes-panel {
     order: 6;
   }
 
-  .playbook-panel {
+  .marks-panel {
     order: 7;
   }
 
-  .playset-panel {
+  .playbook-panel {
     order: 8;
   }
 
-  .export-panel {
+  .playset-panel {
     order: 9;
+  }
+
+  .export-panel {
+    order: 10;
   }
 
   .control-grid {
@@ -1186,6 +1190,10 @@ select {
 
   .mobile-delete-button {
     flex-basis: 76px;
+  }
+
+  .mobile-clear-button {
+    flex-basis: 74px;
   }
 
   .mobile-finish-button {

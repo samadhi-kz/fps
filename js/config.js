@@ -161,6 +161,49 @@ const OFFENSE_FORMATIONS = [
     }
   }
 ];
+const DEFENSE_FORMATIONS = [
+  {
+    value: 'normal',
+    label: 'Normal',
+    positions: [[5, -5], [10, -5], [12.5, -10], [15, -5], [20, -5]]
+  },
+  {
+    value: 'man0',
+    label: 'Man 0',
+    match: 'man',
+    depth: -3
+  },
+  {
+    value: 'oneDeep',
+    label: '1 Deep',
+    positions: [[4, -4], [9, -4], [12.5, -12], [16, -4], [21, -4]]
+  },
+  {
+    value: 'cover2',
+    label: 'Cover 2',
+    positions: [[5, -4], [12.5, -4], [20, -4], [7, -12], [18, -12]]
+  },
+  {
+    value: 'cover3',
+    label: 'Cover 3',
+    positions: [[8, -4], [17, -4], [4, -13], [12.5, -13], [21, -13]]
+  },
+  {
+    value: 'boxZone',
+    label: 'Box Zone',
+    positions: [[6, -4], [19, -4], [8, -8], [17, -8], [12.5, -12]]
+  },
+  {
+    value: 'goalLine',
+    label: 'Goal Line',
+    positions: [[4, -2], [8.5, -2], [12.5, -3], [16.5, -2], [21, -2]]
+  },
+  {
+    value: 'prevent',
+    label: 'Prevent',
+    positions: [[3.5, -13], [8, -16], [12.5, -18], [17, -16], [21.5, -13]]
+  }
+];
 const PLAYER_LABELS = ['1', '2', '3', '4', '5'];
 const PLAYER_ROLES = {
   1: { value: 'center', label: 'Center/Screen' },

@@ -193,6 +193,10 @@ function formationByValue(value) {
   return OFFENSE_FORMATIONS.find((formation) => formation.value === value) || null;
 }
 
+function defenseFormationByValue(value) {
+  return DEFENSE_FORMATIONS.find((formation) => formation.value === value) || null;
+}
+
 function applyOffenseFormation(value) {
   const formation = formationByValue(value);
   if (!formation) return;
@@ -209,6 +213,59 @@ function applyOffenseFormation(value) {
   saveLocal(false);
   render();
   setStatus(formation.label);
+}
+
+function defensePointFromYards(position) {
+  return clampPoint([fieldX(position[0]), fieldY(position[1])]);
+}
+
+function applyManDefenseFormation(formation) {
+  const offenseByX = [...state.players].sort((a, b) => a.x - b.x);
+  state.defenders.forEach((defender, index) => {
+    const player = offenseByX[index];
+    if (!player) return;
+    const cluster = offenseByX.filter((item) => Math.abs(item.x - player.x) < 30);
+    const clusterIndex = cluster.findIndex((item) => item.id === player.id);
+    const offset = cluster.length > 1 ? (clusterIndex - (cluster.length - 1) / 2) * 34 : 0;
+    [defender.x, defender.y] = clampPoint([player.x + offset, fieldY(formation.depth)]);
+  });
+}
+
+function applyDefenseFormation(value) {
+  const formation = defenseFormationByValue(value);
+  if (!formation) return;
+
+  state.routeDraft = null;
+  state.drag = null;
+  state.pendingPreset = null;
+  state.defenseVisible = true;
+  if (formation.match === 'man') {
+    applyManDefenseFormation(formation);
+  } else {
+    state.defenders.forEach((defender, index) => {
+      const position = formation.positions[index];
+      if (!position) return;
+      [defender.x, defender.y] = defensePointFromYards(position);
+    });
+  }
+  saveLocal(false);
+  render();
+  setStatus(formation.label);
+}
+
+function setDefenseVisible(visible, status = '') {
+  state.defenseVisible = Boolean(visible);
+  if (!state.defenseVisible && state.selectedType === 'defender') {
+    state.selectedId = null;
+    state.selectedType = null;
+  }
+  saveLocal(false);
+  render();
+  setStatus(status || (state.defenseVisible ? 'Defense ON' : 'Defense OFF'));
+}
+
+function toggleDefenseVisible() {
+  setDefenseVisible(!state.defenseVisible);
 }
 
 function createAnnotation(point) {
