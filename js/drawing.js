@@ -626,10 +626,10 @@ function syncDockActionButtons() {
   const canUndoFromDock = state.routeDraft ? true : canUndoHistory();
   const canRedoFromDock = !state.routeDraft && canRedoHistory();
   document.querySelectorAll('[data-action="undo-history"]').forEach((button) => {
-    button.disabled = !canUndoFromDock;
+    button.setAttribute('aria-disabled', String(!canUndoFromDock));
   });
   document.querySelectorAll('[data-action="redo-history"]').forEach((button) => {
-    button.disabled = !canRedoFromDock;
+    button.setAttribute('aria-disabled', String(!canRedoFromDock));
   });
   document.querySelectorAll('[data-action="delete-selected"]').forEach((button) => {
     button.disabled = !canDeleteFromDock;

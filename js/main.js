@@ -141,12 +141,34 @@ document.querySelectorAll('[data-action="finish-route"]').forEach((button) => {
 document.querySelectorAll('[data-action="delete-selected"]').forEach((button) => {
   button.addEventListener('click', deleteSelectedItem);
 });
-document.querySelectorAll('[data-action="undo-history"]').forEach((button) => {
-  button.addEventListener('click', undoCommand);
-});
-document.querySelectorAll('[data-action="redo-history"]').forEach((button) => {
-  button.addEventListener('click', redoCommand);
-});
+function bindTouchFriendlyCommand(selector, handler) {
+  document.querySelectorAll(selector).forEach((button) => {
+    let touchStart = null;
+    let handledTouchAt = 0;
+    button.addEventListener('click', (event) => {
+      if (Date.now() - handledTouchAt < 600) return;
+      event.preventDefault();
+      handler();
+    });
+    button.addEventListener('touchstart', (event) => {
+      const touch = event.changedTouches[0];
+      touchStart = touch ? { x: touch.clientX, y: touch.clientY } : null;
+    }, { passive: true });
+    button.addEventListener('touchend', (event) => {
+      const touch = event.changedTouches[0];
+      if (!touch || !touchStart) return;
+      const moved = Math.hypot(touch.clientX - touchStart.x, touch.clientY - touchStart.y);
+      touchStart = null;
+      if (moved > 10) return;
+      event.preventDefault();
+      handledTouchAt = Date.now();
+      handler();
+    }, { passive: false });
+  });
+}
+
+bindTouchFriendlyCommand('[data-action="undo-history"]', undoCommand);
+bindTouchFriendlyCommand('[data-action="redo-history"]', redoCommand);
 document.querySelectorAll('[data-action="toggle-fullscreen"]').forEach((button) => {
   button.addEventListener('click', toggleFullscreen);
 });
