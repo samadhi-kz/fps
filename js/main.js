@@ -302,7 +302,11 @@ window.addEventListener('resize', () => {
   resizeRenderFrame = window.requestAnimationFrame(() => {
     resizeRenderFrame = null;
     if (isFocusMode() && !isMobileLayout()) setFocusMode(false);
-    else if (isFocusMode()) clampFocusDock();
+    else if (isFocusMode()) {
+      setFocusFieldSize();
+      clampFocusDock();
+      centerFocusCanvas();
+    }
     render();
   });
 });
@@ -357,18 +361,48 @@ function setFocusDockPosition(left, top) {
   mobileDock.style.top = `${next.top}px`;
 }
 
+function focusViewportSize() {
+  const visual = window.visualViewport;
+  return {
+    width: Math.max(1, visual?.width || window.innerWidth || document.documentElement.clientWidth || 1),
+    height: Math.max(1, visual?.height || window.innerHeight || document.documentElement.clientHeight || 1)
+  };
+}
+
+function setFocusFieldSize() {
+  const viewport = focusViewportSize();
+  const scale = viewport.height >= viewport.width ? 1.55 : 1.15;
+  const width = Math.round(viewport.width * scale);
+  const height = Math.round(width * 720 / 1000);
+  field.style.setProperty('--focus-field-width', `${width}px`);
+  field.style.setProperty('--focus-field-height', `${height}px`);
+}
+
+function clearFocusFieldSize() {
+  field.style.removeProperty('--focus-field-width');
+  field.style.removeProperty('--focus-field-height');
+}
+
+function centerFocusCanvas() {
+  const wrap = document.querySelector('.canvas-wrap');
+  if (!wrap) return;
+  const maxLeft = Math.max(0, wrap.scrollWidth - wrap.clientWidth);
+  const maxTop = Math.max(0, wrap.scrollHeight - wrap.clientHeight);
+  const fieldHeight = field.getBoundingClientRect().height || wrap.scrollHeight;
+  const playCenterY = fieldHeight * 0.62;
+  wrap.scrollLeft = maxLeft / 2;
+  wrap.scrollTop = clamp(playCenterY - wrap.clientHeight * 0.52, 0, maxTop);
+}
+
 function placeFocusDockDefault() {
+  setFocusFieldSize();
   window.requestAnimationFrame(() => {
     const rect = mobileDock.getBoundingClientRect();
     setFocusDockPosition(
       Math.max(8, window.innerWidth - rect.width - 10),
       Math.max(8, window.innerHeight - rect.height - 12)
     );
-    const wrap = document.querySelector('.canvas-wrap');
-    if (wrap) {
-      wrap.scrollLeft = Math.max(0, (wrap.scrollWidth - wrap.clientWidth) / 2);
-      wrap.scrollTop = 0;
-    }
+    centerFocusCanvas();
   });
 }
 
@@ -384,6 +418,7 @@ function setFocusMode(enabled) {
     placeFocusDockDefault();
     setStatus('Focus Mode');
   } else {
+    clearFocusFieldSize();
     mobileDock.style.left = '';
     mobileDock.style.top = '';
     setStatus('準備OK');
