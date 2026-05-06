@@ -1001,6 +1001,10 @@ select {
     padding-bottom: calc(var(--mobile-dock-space) + env(safe-area-inset-bottom));
   }
 
+  body.has-selected-route {
+    --mobile-dock-space: 224px;
+  }
+
   .app-shell {
     grid-template-columns: 1fr;
     min-height: auto;
@@ -1296,7 +1300,12 @@ select {
     cursor: grabbing;
   }
 
+  .mobile-line-row[hidden] {
+    display: none;
+  }
+
   .mobile-tool-row,
+  .mobile-line-row,
   .mobile-action-row {
     display: flex;
     gap: 6px;
@@ -1310,12 +1319,15 @@ select {
   }
 
   .mobile-tool-row::-webkit-scrollbar,
+  .mobile-line-row::-webkit-scrollbar,
   .mobile-action-row::-webkit-scrollbar {
     display: none;
   }
 
   .mobile-tool-row .tool-button,
   .mobile-tool-row .dock-action-button,
+  .mobile-line-row .tool-button,
+  .mobile-line-row .dock-action-button,
   .mobile-action-row .tool-button,
   .mobile-action-row .dock-action-button {
     display: grid;
@@ -1332,10 +1344,36 @@ select {
   }
 
   .mobile-tool-row .tool-icon,
+  .mobile-line-row .tool-icon,
   .mobile-action-row .tool-icon {
     width: 30px;
     height: 30px;
     flex-basis: 30px;
+  }
+
+  .mobile-line-style-button {
+    flex-basis: 70px;
+  }
+
+  .mobile-line-style-button.is-active {
+    border-color: var(--teal);
+    background: #e8f4f2;
+    color: #004f48;
+  }
+
+  .mobile-line-style-button.is-active .tool-icon:not(.color-icon) {
+    background: rgba(0, 104, 95, .13);
+    color: var(--teal-dark);
+  }
+
+  .color-icon {
+    border: 2px solid rgba(20, 30, 45, .16);
+    background: var(--line-color);
+  }
+
+  .mobile-color-button.is-active .color-icon {
+    border-color: #fff;
+    box-shadow: 0 0 0 3px rgba(0, 104, 95, .35);
   }
 
   .mobile-delete-button {
@@ -1357,6 +1395,10 @@ select {
     --mobile-dock-space: 132px;
   }
 
+  body.has-selected-route {
+    --mobile-dock-space: 184px;
+  }
+
   .workspace {
     position: static;
     padding-top: 8px;
@@ -1370,6 +1412,8 @@ select {
 
   .mobile-tool-row .tool-button,
   .mobile-tool-row .dock-action-button,
+  .mobile-line-row .tool-button,
+  .mobile-line-row .dock-action-button,
   .mobile-action-row .tool-button,
   .mobile-action-row .dock-action-button {
     flex-basis: 68px;
@@ -1378,6 +1422,7 @@ select {
   }
 
   .mobile-tool-row .tool-icon,
+  .mobile-line-row .tool-icon,
   .mobile-action-row .tool-icon {
     width: 26px;
     height: 26px;

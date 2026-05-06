@@ -145,7 +145,7 @@ function bindTouchFriendlyCommand(selector, handler) {
     button.addEventListener('click', (event) => {
       if (Date.now() - handledTouchAt < 600) return;
       event.preventDefault();
-      handler();
+      handler(button, event);
     });
     button.addEventListener('touchstart', (event) => {
       const touch = event.changedTouches[0];
@@ -159,7 +159,7 @@ function bindTouchFriendlyCommand(selector, handler) {
       if (moved > 10) return;
       event.preventDefault();
       handledTouchAt = Date.now();
-      handler();
+      handler(button, event);
     }, { passive: false });
   });
 }
@@ -167,6 +167,9 @@ function bindTouchFriendlyCommand(selector, handler) {
 bindTouchFriendlyCommand('[data-action="undo-history"]', undoCommand);
 bindTouchFriendlyCommand('[data-action="redo-history"]', redoCommand);
 bindTouchFriendlyCommand('[data-action="clear-routes"]', clearRoutes);
+bindTouchFriendlyCommand('[data-mobile-route-type]', (button) => updateSelectedRouteType(button.dataset.mobileRouteType));
+bindTouchFriendlyCommand('[data-mobile-end-cap]', (button) => updateSelectedEndCap(button.dataset.mobileEndCap));
+bindTouchFriendlyCommand('[data-mobile-line-color]', (button) => updateSelectedLineColor(button.dataset.mobileLineColor));
 document.querySelectorAll('[data-action="toggle-defense-visible"]').forEach((button) => {
   button.addEventListener('click', toggleDefenseVisible);
 });
@@ -221,6 +224,39 @@ function redoCommand() {
     return;
   }
   redoHistory();
+}
+
+function selectedRouteForDockEdit() {
+  const route = activeRoute();
+  if (!route) setStatus('線を選択');
+  return route;
+}
+
+function updateSelectedRouteType(type) {
+  const route = selectedRouteForDockEdit();
+  if (!route) return;
+  const nextType = ['route', 'motion', 'pass'].includes(type) ? type : 'route';
+  route.type = nextType;
+  saveLocal(false, { historyKey: `line-type-${route.id}` });
+  render();
+  setStatus(nextType === 'motion' ? 'Wave Line' : nextType === 'pass' ? 'Dotted Line' : 'Solid Line');
+}
+
+function updateSelectedEndCap(end) {
+  const route = selectedRouteForDockEdit();
+  if (!route) return;
+  if (!['arrow', 't', 'dot'].includes(end)) return;
+  route.end = end;
+  controls.endCap.value = end;
+  saveLocal(false, { historyKey: `route-end-${route.id}` });
+  render();
+  setStatus(end === 'arrow' ? 'Arrow End' : end === 't' ? 'T End' : 'Dot End');
+}
+
+function updateSelectedLineColor(color) {
+  const route = selectedRouteForDockEdit();
+  if (!route) return;
+  updateLineStyle({ color: normalizeRouteColor(color) });
 }
 
 function undoPolylinePoint() {

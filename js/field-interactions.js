@@ -648,6 +648,7 @@ function updateLineStyle(partialStyle) {
     saveLocal(false, { historyKey: `line-style-${route.id}` });
     drawRoutes();
     syncLineStyleControls();
+    syncMobileLineControls();
     setStatus('Line Style');
     return;
   }
@@ -656,5 +657,6 @@ function updateLineStyle(partialStyle) {
   saveLocal(false, { historyKey: 'line-style-default' });
   drawTemp();
   syncLineStyleControls();
+  syncMobileLineControls();
   setStatus('Line Default');
 }

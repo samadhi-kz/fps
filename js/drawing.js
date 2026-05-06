@@ -641,6 +641,39 @@ function syncDockActionButtons() {
   document.querySelectorAll('[data-action="finish-route"]').forEach((button) => {
     button.disabled = !canFinishRoute;
   });
+  syncMobileLineControls();
+}
+
+function mobileRouteType(route) {
+  if (route?.type === 'motion' || route?.type === 'pass') return route.type;
+  return 'route';
+}
+
+function syncMobileLineControls() {
+  const route = activeRoute();
+  const hasRoute = Boolean(route);
+  const selectedType = mobileRouteType(route);
+  const selectedEnd = route?.end || '';
+  const selectedColor = route ? normalizeRouteStyle(route).color : '';
+
+  document.body.classList.toggle('has-selected-route', hasRoute);
+  document.querySelectorAll('.mobile-line-row').forEach((row) => {
+    row.hidden = !hasRoute;
+    row.setAttribute('aria-hidden', String(!hasRoute));
+  });
+  document.querySelectorAll('[data-mobile-route-type]').forEach((button) => {
+    button.disabled = !hasRoute;
+    button.classList.toggle('is-active', hasRoute && button.dataset.mobileRouteType === selectedType);
+  });
+  document.querySelectorAll('[data-mobile-end-cap]').forEach((button) => {
+    button.disabled = !hasRoute;
+    button.classList.toggle('is-active', hasRoute && button.dataset.mobileEndCap === selectedEnd);
+  });
+  document.querySelectorAll('[data-mobile-line-color]').forEach((button) => {
+    const buttonColor = normalizeRouteColor(button.dataset.mobileLineColor);
+    button.disabled = !hasRoute;
+    button.classList.toggle('is-active', hasRoute && buttonColor === selectedColor);
+  });
 }
 
 function syncDefenseVisibilityControls() {

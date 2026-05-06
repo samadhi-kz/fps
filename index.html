@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Flag Play Studio</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=20260506-lineedit1">
   </head>
   <body>
     <main class="app-shell">
@@ -234,6 +234,18 @@
         <button class="tool-button" type="button" data-tool="block" title="Block"><span class="tool-icon">⊣</span><span>Block</span></button>
         <button class="tool-button" type="button" data-tool="text" title="Comment"><span class="tool-icon">T</span><span>Comment</span></button>
       </div>
+      <div class="mobile-line-row" role="group" aria-label="Selected line style" hidden>
+        <button class="dock-action-button mobile-line-style-button" type="button" data-mobile-route-type="route" title="Solid line"><span class="tool-icon">━</span><span>Solid</span></button>
+        <button class="dock-action-button mobile-line-style-button" type="button" data-mobile-route-type="motion" title="Wave line"><span class="tool-icon">〰</span><span>Wave</span></button>
+        <button class="dock-action-button mobile-line-style-button" type="button" data-mobile-route-type="pass" title="Dotted line"><span class="tool-icon">⋯</span><span>Dots</span></button>
+        <button class="dock-action-button mobile-line-style-button" type="button" data-mobile-end-cap="arrow" title="Arrow end"><span class="tool-icon">➜</span><span>Arrow</span></button>
+        <button class="dock-action-button mobile-line-style-button" type="button" data-mobile-end-cap="t" title="T end"><span class="tool-icon">⊣</span><span>T</span></button>
+        <button class="dock-action-button mobile-line-style-button" type="button" data-mobile-end-cap="dot" title="Dot end"><span class="tool-icon">●</span><span>Dot</span></button>
+        <button class="dock-action-button mobile-line-style-button mobile-color-button" type="button" data-mobile-line-color="#101010" title="Black line"><span class="tool-icon color-icon" style="--line-color: #101010"></span><span>Black</span></button>
+        <button class="dock-action-button mobile-line-style-button mobile-color-button" type="button" data-mobile-line-color="#e71932" title="Red line"><span class="tool-icon color-icon" style="--line-color: #e71932"></span><span>Red</span></button>
+        <button class="dock-action-button mobile-line-style-button mobile-color-button" type="button" data-mobile-line-color="#2f6fed" title="Blue line"><span class="tool-icon color-icon" style="--line-color: #2f6fed"></span><span>Blue</span></button>
+        <button class="dock-action-button mobile-line-style-button mobile-color-button" type="button" data-mobile-line-color="#008579" title="Green line"><span class="tool-icon color-icon" style="--line-color: #008579"></span><span>Green</span></button>
+      </div>
       <div class="mobile-action-row" role="group" aria-label="Edit actions">
         <button class="tool-button is-active" type="button" data-tool="select" title="Select"><span class="tool-icon">↖</span><span>Select</span></button>
         <button class="dock-action-button mobile-undo-button" type="button" data-action="undo-history" title="Undo" aria-disabled="true"><span class="tool-icon">↶</span><span>Undo</span></button>
@@ -246,13 +258,13 @@
     </nav>
     <div id="printBook" class="print-book" aria-hidden="true"></div>
 
-    <script src="js/config.js"></script>
-    <script src="js/model.js"></script>
-    <script src="js/playbook-tree.js"></script>
-    <script src="js/drawing.js"></script>
-    <script src="js/field-interactions.js"></script>
-    <script src="js/files.js"></script>
-    <script src="js/playbook-actions.js"></script>
-    <script src="js/main.js"></script>
+    <script src="js/config.js?v=20260506-lineedit1"></script>
+    <script src="js/model.js?v=20260506-lineedit1"></script>
+    <script src="js/playbook-tree.js?v=20260506-lineedit1"></script>
+    <script src="js/drawing.js?v=20260506-lineedit1"></script>
+    <script src="js/field-interactions.js?v=20260506-lineedit1"></script>
+    <script src="js/files.js?v=20260506-lineedit1"></script>
+    <script src="js/playbook-actions.js?v=20260506-lineedit1"></script>
+    <script src="js/main.js?v=20260506-lineedit1"></script>
   </body>
 </html>
