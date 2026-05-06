@@ -129,6 +129,7 @@ No automated test suite is included. The recommended checks are:
 
 This project is licensed under the MIT License.
 Copyright (c) 2026 Kazutaka Maeda (@samadhi-kz)
+See [LICENSE](./LICENSE) for details.
 
 ## Contributing
 
