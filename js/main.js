@@ -150,7 +150,9 @@ document.querySelectorAll('[data-action="redo-history"]').forEach((button) => {
 document.querySelectorAll('[data-action="toggle-fullscreen"]').forEach((button) => {
   button.addEventListener('click', toggleFullscreen);
 });
-document.querySelector('#flipBtn').addEventListener('click', flipPlay);
+document.querySelectorAll('[data-action="flip-play"]').forEach((button) => {
+  button.addEventListener('click', flipPlay);
+});
 document.querySelector('#clearRoutesBtn').addEventListener('click', clearRoutes);
 document.querySelector('#openPlaysetBtn').addEventListener('click', openPlaysetFile);
 document.querySelector('#savePlaysetFileBtn').addEventListener('click', savePlaysetFile);
