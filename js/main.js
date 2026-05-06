@@ -176,25 +176,33 @@ document.querySelectorAll('[data-action="toggle-fullscreen"]').forEach((button) 
 document.querySelectorAll('[data-action="flip-play"]').forEach((button) => {
   button.addEventListener('click', flipPlay);
 });
+document.querySelectorAll('[data-action="rename-active-folder"]').forEach((button) => {
+  button.addEventListener('click', () => renameFolderById());
+  button.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    renameFolderById();
+  });
+});
+document.querySelectorAll('[data-action="rename-active-play"]').forEach((button) => {
+  button.addEventListener('click', () => renamePlayById());
+  button.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    renamePlayById();
+  });
+});
 document.querySelector('#openPlaysetBtn').addEventListener('click', openPlaysetFile);
 document.querySelector('#savePlaysetFileBtn').addEventListener('click', savePlaysetFile);
 document.querySelector('#savePlaysetAsBtn').addEventListener('click', savePlaysetAs);
 document.querySelector('#exportPngBtn').addEventListener('click', exportPng);
+document.querySelector('#savePhotoBtn').addEventListener('click', savePhoto);
 document.querySelector('#pdfCurrentBtn').addEventListener('click', exportCurrentPdf);
 document.querySelector('#pdfBookBtn').addEventListener('click', exportPlaybookPdf);
 
 function undoCommand() {
   if (state.routeDraft?.input === 'poly') {
-    if (state.routeDraft.points.length > 1) {
-      state.routeDraft.points.pop();
-      drawTemp();
-      setStatus('Point Undo');
-    } else {
-      state.routeDraft = null;
-      state.drag = null;
-      render();
-      setStatus('Cancelled');
-    }
+    undoPolylinePoint();
     return;
   }
   if (state.routeDraft) {
@@ -213,6 +221,22 @@ function redoCommand() {
     return;
   }
   redoHistory();
+}
+
+function undoPolylinePoint() {
+  if (!state.routeDraft || state.routeDraft.input !== 'poly') return;
+  if (state.routeDraft.points.length > 1) {
+    state.routeDraft.points.pop();
+    const last = state.routeDraft.points[state.routeDraft.points.length - 1];
+    state.routeDraft.previewPoint = last ? [...last] : null;
+    drawTemp();
+    setStatus('Point Undo');
+    return;
+  }
+  state.routeDraft = null;
+  state.drag = null;
+  render();
+  setStatus('Cancelled');
 }
 
 document.addEventListener('keydown', (event) => {
@@ -240,10 +264,7 @@ document.addEventListener('keydown', (event) => {
     }
     if (event.key === 'Backspace' || event.key === 'Delete') {
       event.preventDefault();
-      if (state.routeDraft.points.length > 1) {
-        state.routeDraft.points.pop();
-        drawTemp();
-      }
+      undoPolylinePoint();
       return;
     }
   }

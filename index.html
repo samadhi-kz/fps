@@ -192,10 +192,13 @@
       <section class="workspace">
         <div class="topbar">
           <div class="title-group">
-            <div id="folderLabel" class="folder-label">My Play Book</div>
-            <h2 id="titleLabel">New Play</h2>
+            <div id="folderLabel" class="folder-label editable-title" role="button" tabindex="0" data-action="rename-active-folder" title="Rename playbook">My Play Book</div>
+            <h2 id="titleLabel" class="editable-title" role="button" tabindex="0" data-action="rename-active-play" title="Rename play">New Play</h2>
           </div>
-          <div id="statusText" class="status" role="status" aria-live="polite">Ready</div>
+          <div class="topbar-actions">
+            <button id="savePhotoBtn" class="topbar-button" type="button" title="Save photo">Photo</button>
+            <div id="statusText" class="status" role="status" aria-live="polite">Ready</div>
+          </div>
         </div>
 
         <div class="canvas-wrap">
@@ -223,30 +226,21 @@
     </main>
     <nav class="mobile-dock" aria-label="Mobile drawing tools">
       <div class="mobile-tool-row" role="group" aria-label="Tools">
-        <button class="tool-button is-active" type="button" data-tool="select" title="Select"><span class="tool-icon">↖</span><span>Select</span></button>
-        <button class="dock-action-button mobile-undo-button" type="button" data-action="undo-history" title="Undo" aria-disabled="true"><span class="tool-icon">↶</span><span>Undo</span></button>
-        <button class="dock-action-button mobile-redo-button" type="button" data-action="redo-history" title="Redo" aria-disabled="true"><span class="tool-icon">↷</span><span>Redo</span></button>
-        <button class="dock-action-button danger mobile-delete-button" type="button" data-action="delete-selected" title="Delete selected line or comment" disabled><span class="tool-icon">⌫</span><span>Delete</span></button>
         <button class="tool-button" type="button" data-tool="route" title="Route"><span class="tool-icon">➜</span><span>Route</span></button>
         <button class="tool-button" type="button" data-tool="draw" title="Draw"><span class="tool-icon">✎</span><span>Draw</span></button>
         <button class="tool-button" type="button" data-tool="motion" title="Motion"><span class="tool-icon">〰</span><span>Motion</span></button>
         <button class="tool-button" type="button" data-tool="pass" title="Pass"><span class="tool-icon">⋯</span><span>Pass</span></button>
         <button class="tool-button" type="button" data-tool="block" title="Block"><span class="tool-icon">⊣</span><span>Block</span></button>
         <button class="tool-button" type="button" data-tool="text" title="Comment"><span class="tool-icon">T</span><span>Comment</span></button>
+      </div>
+      <div class="mobile-action-row" role="group" aria-label="Edit actions">
+        <button class="tool-button is-active" type="button" data-tool="select" title="Select"><span class="tool-icon">↖</span><span>Select</span></button>
+        <button class="dock-action-button mobile-undo-button" type="button" data-action="undo-history" title="Undo" aria-disabled="true"><span class="tool-icon">↶</span><span>Undo</span></button>
+        <button class="dock-action-button mobile-redo-button" type="button" data-action="redo-history" title="Redo" aria-disabled="true"><span class="tool-icon">↷</span><span>Redo</span></button>
+        <button class="dock-action-button danger mobile-delete-button" type="button" data-action="delete-selected" title="Delete selected line or comment" disabled><span class="tool-icon">⌫</span><span>Delete</span></button>
         <button class="dock-action-button mobile-finish-button" type="button" data-action="finish-route" title="Finish current line" disabled><span class="tool-icon">✓</span><span>Done</span></button>
         <button class="dock-action-button danger mobile-clear-button" type="button" data-action="clear-routes" title="Clear all lines" disabled><span class="tool-icon">×</span><span>Clear</span></button>
         <button class="dock-action-button" type="button" data-action="toggle-fullscreen" title="Toggle fullscreen"><span class="tool-icon">⬜</span><span>Full</span></button>
-      </div>
-      <div class="mobile-preset-row" aria-label="Route presets">
-        <button class="preset-button" type="button" data-preset="go">Go</button>
-        <button class="preset-button" type="button" data-preset="out">Out</button>
-        <button class="preset-button" type="button" data-preset="in">In</button>
-        <button class="preset-button" type="button" data-preset="slant">Slant</button>
-        <button class="preset-button" type="button" data-preset="post">Post</button>
-        <button class="preset-button" type="button" data-preset="corner">Corner</button>
-        <button class="preset-button" type="button" data-preset="curl">Curl</button>
-        <button class="preset-button" type="button" data-preset="motion">Motion</button>
-        <button class="preset-button" type="button" data-preset="block">Block</button>
       </div>
     </nav>
     <div id="printBook" class="print-book" aria-hidden="true"></div>

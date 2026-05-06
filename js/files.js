@@ -43,36 +43,68 @@ function cloneFieldForExport() {
   return clone;
 }
 
-function exportPng() {
-  saveLocal(false);
+function createPngBlob() {
   const clone = cloneFieldForExport();
   const source = new XMLSerializer().serializeToString(clone);
   const blob = new Blob([source], { type: 'image/svg+xml;charset=utf-8' });
   const url = URL.createObjectURL(blob);
-  const image = new Image();
-  image.onload = () => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 2000;
-    canvas.height = 1440;
-    const context = canvas.getContext('2d');
-    context.fillStyle = '#ffffff';
-    context.fillRect(0, 0, canvas.width, canvas.height);
-    context.drawImage(image, 0, 0, canvas.width, canvas.height);
-    URL.revokeObjectURL(url);
-    canvas.toBlob((pngBlob) => {
-      if (!pngBlob) {
-        setStatus('PNG Failed');
-        return;
-      }
-      downloadBlob(pngBlob, `${safeFileBase(state.playName)}.png`);
-      setStatus('PNG Exported');
-    }, 'image/png');
-  };
-  image.onerror = () => {
-    URL.revokeObjectURL(url);
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 2000;
+      canvas.height = 1440;
+      const context = canvas.getContext('2d');
+      context.fillStyle = '#ffffff';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      canvas.toBlob((pngBlob) => {
+        if (pngBlob) resolve(pngBlob);
+        else reject(new Error('PNG conversion failed'));
+      }, 'image/png');
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('PNG image failed'));
+    };
+    image.src = url;
+  });
+}
+
+async function exportPng() {
+  saveLocal(false);
+  try {
+    const pngBlob = await createPngBlob();
+    downloadBlob(pngBlob, `${safeFileBase(state.playName)}.png`);
+    setStatus('PNG Exported');
+  } catch (error) {
+    console.error(error);
     setStatus('PNG Failed');
-  };
-  image.src = url;
+  }
+}
+
+async function savePhoto() {
+  saveLocal(false);
+  try {
+    const filename = `${safeFileBase(state.playName)}.png`;
+    const pngBlob = await createPngBlob();
+    const file = new File([pngBlob], filename, { type: 'image/png' });
+    if (navigator.canShare?.({ files: [file] }) && navigator.share) {
+      await navigator.share({ files: [file], title: state.playName || 'Flag Play' });
+      setStatus('Photo Ready');
+      return;
+    }
+    downloadBlob(pngBlob, filename);
+    setStatus('Photo Saved');
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      setStatus('Cancelled');
+      return;
+    }
+    console.error(error);
+    setStatus('Photo Failed');
+  }
 }
 
 function normalizeImportedPlaybook(data) {
