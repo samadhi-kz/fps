@@ -371,9 +371,11 @@ function focusViewportSize() {
 
 function setFocusFieldSize() {
   const viewport = focusViewportSize();
-  const scale = viewport.height >= viewport.width ? 1.55 : 1.15;
-  const width = Math.round(viewport.width * scale);
-  const height = Math.round(width * 720 / 1000);
+  const isPortrait = viewport.height >= viewport.width;
+  const baseWidth = viewport.width * (isPortrait ? 1.55 : 1.15);
+  const targetHeight = isPortrait ? Math.max(baseWidth * 720 / 1000, viewport.height * 0.82) : baseWidth * 720 / 1000;
+  const width = Math.round(targetHeight * 1000 / 720);
+  const height = Math.round(targetHeight);
   field.style.setProperty('--focus-field-width', `${width}px`);
   field.style.setProperty('--focus-field-height', `${height}px`);
 }
