@@ -141,6 +141,12 @@ document.querySelectorAll('[data-action="finish-route"]').forEach((button) => {
 document.querySelectorAll('[data-action="delete-selected"]').forEach((button) => {
   button.addEventListener('click', deleteSelectedItem);
 });
+document.querySelectorAll('[data-action="undo-history"]').forEach((button) => {
+  button.addEventListener('click', undoCommand);
+});
+document.querySelectorAll('[data-action="redo-history"]').forEach((button) => {
+  button.addEventListener('click', redoCommand);
+});
 document.querySelectorAll('[data-action="toggle-fullscreen"]').forEach((button) => {
   button.addEventListener('click', toggleFullscreen);
 });
@@ -153,40 +159,52 @@ document.querySelector('#exportPngBtn').addEventListener('click', exportPng);
 document.querySelector('#pdfCurrentBtn').addEventListener('click', exportCurrentPdf);
 document.querySelector('#pdfBookBtn').addEventListener('click', exportPlaybookPdf);
 
+function undoCommand() {
+  if (state.routeDraft?.input === 'poly') {
+    if (state.routeDraft.points.length > 1) {
+      state.routeDraft.points.pop();
+      drawTemp();
+      setStatus('Point Undo');
+    } else {
+      state.routeDraft = null;
+      state.drag = null;
+      render();
+      setStatus('Cancelled');
+    }
+    return;
+  }
+  if (state.routeDraft) {
+    state.routeDraft = null;
+    state.drag = null;
+    render();
+    setStatus('Cancelled');
+    return;
+  }
+  undoHistory();
+}
+
+function redoCommand() {
+  if (state.routeDraft) {
+    setStatus('Drawing');
+    return;
+  }
+  redoHistory();
+}
+
 document.addEventListener('keydown', (event) => {
   const isTextEditing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName);
   if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'z') {
     if (!isTextEditing) {
       event.preventDefault();
-      if (state.routeDraft?.input === 'poly') {
-        if (state.routeDraft.points.length > 1) {
-          state.routeDraft.points.pop();
-          drawTemp();
-          setStatus('Point Undo');
-        } else {
-          state.routeDraft = null;
-          state.drag = null;
-          render();
-          setStatus('Cancelled');
-        }
-        return;
-      }
-      if (state.routeDraft) {
-        state.routeDraft = null;
-        state.drag = null;
-        render();
-        setStatus('Cancelled');
-        return;
-      }
-      if (event.shiftKey) redoHistory();
-      else undoHistory();
+      if (event.shiftKey) redoCommand();
+      else undoCommand();
     }
     return;
   }
   if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'y') {
     if (!isTextEditing) {
       event.preventDefault();
-      redoHistory();
+      redoCommand();
     }
     return;
   }

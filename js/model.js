@@ -345,6 +345,7 @@ function resetHistory() {
   state.historyFingerprint = historyFingerprint(snapshot);
   state.historyLastKey = '';
   state.historyLastAt = 0;
+  if (typeof syncDockActionButtons === 'function') syncDockActionButtons();
 }
 
 function recordHistory(options = {}) {
@@ -409,6 +410,7 @@ function undoHistory() {
   state.historyFingerprint = historyFingerprint(previous);
   state.historyLastKey = '';
   state.historyLastAt = 0;
+  syncDockActionButtons();
   setStatus('Undo');
   return true;
 }
@@ -426,8 +428,18 @@ function redoHistory() {
   state.historyFingerprint = historyFingerprint(snapshot);
   state.historyLastKey = '';
   state.historyLastAt = 0;
+  syncDockActionButtons();
   setStatus('Redo');
   return true;
+}
+
+function canUndoHistory() {
+  if (!state.undoStack.length) return false;
+  return state.undoStack.length > 1 || historyFingerprint(historySnapshot()) !== state.historyFingerprint;
+}
+
+function canRedoHistory() {
+  return state.redoStack.length > 0;
 }
 
 function saveLocal(showStatus = false, options = {}) {
@@ -436,6 +448,7 @@ function saveLocal(showStatus = false, options = {}) {
   if (showStatus) setStatus('Updated');
   renderPlaybookSelectors();
   syncPlaysetFileBadge();
+  if (typeof syncDockActionButtons === 'function') syncDockActionButtons();
 }
 
 function applyPlay(play) {

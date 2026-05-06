@@ -623,6 +623,14 @@ function syncDockActionButtons() {
   const canFinishRoute = state.routeDraft?.input === 'poly'
     && state.routeDraft.points.length >= 2
     && routeLength(state.routeDraft.points) > 20;
+  const canUndoFromDock = state.routeDraft ? true : canUndoHistory();
+  const canRedoFromDock = !state.routeDraft && canRedoHistory();
+  document.querySelectorAll('[data-action="undo-history"]').forEach((button) => {
+    button.disabled = !canUndoFromDock;
+  });
+  document.querySelectorAll('[data-action="redo-history"]').forEach((button) => {
+    button.disabled = !canRedoFromDock;
+  });
   document.querySelectorAll('[data-action="delete-selected"]').forEach((button) => {
     button.disabled = !canDeleteFromDock;
   });
