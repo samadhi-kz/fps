@@ -221,7 +221,8 @@ function defensePointFromYards(position) {
 
 function applyManDefenseFormation(formation) {
   const offenseByX = [...state.players].sort((a, b) => a.x - b.x);
-  state.defenders.forEach((defender, index) => {
+  const manDefenders = formation.middleHelp ? state.defenders.slice(0, -1) : state.defenders;
+  manDefenders.forEach((defender, index) => {
     const player = offenseByX[index];
     if (!player) return;
     const cluster = offenseByX.filter((item) => Math.abs(item.x - player.x) < 30);
@@ -229,6 +230,10 @@ function applyManDefenseFormation(formation) {
     const offset = cluster.length > 1 ? (clusterIndex - (cluster.length - 1) / 2) * 34 : 0;
     [defender.x, defender.y] = clampPoint([player.x + offset, fieldY(formation.depth)]);
   });
+  if (formation.middleHelp) {
+    const helper = state.defenders[state.defenders.length - 1];
+    [helper.x, helper.y] = defensePointFromYards(formation.middleHelp);
+  }
 }
 
 function applyDefenseFormation(value) {

@@ -171,22 +171,23 @@ const DEFENSE_FORMATIONS = [
     value: 'man0',
     label: 'Man 0',
     match: 'man',
-    depth: -3
+    depth: -3,
+    middleHelp: [12.5, -6]
   },
   {
     value: 'oneDeep',
     label: '1 Deep',
-    positions: [[4, -4], [9, -4], [12.5, -12], [16, -4], [21, -4]]
+    positions: [[4, -4], [9, -4], [12.5, -10], [16, -4], [21, -4]]
   },
   {
     value: 'cover2',
     label: 'Cover 2',
-    positions: [[5, -4], [12.5, -4], [20, -4], [7, -12], [18, -12]]
+    positions: [[5, -4], [12.5, -4], [20, -4], [7, -10], [18, -10]]
   },
   {
     value: 'cover3',
     label: 'Cover 3',
-    positions: [[8, -4], [17, -4], [4, -13], [12.5, -13], [21, -13]]
+    positions: [[8, -4], [17, -4], [4, -12], [12.5, -12], [21, -12]]
   },
   {
     value: 'boxZone',
