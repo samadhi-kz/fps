@@ -869,6 +869,11 @@ select {
   pointer-events: all;
 }
 
+.route-handle.is-compact {
+  fill: rgba(255, 255, 255, .82);
+  stroke-width: 3;
+}
+
 .route-insert {
   fill: var(--gold);
   stroke: #fff;

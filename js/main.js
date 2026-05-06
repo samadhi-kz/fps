@@ -219,6 +219,10 @@ function undoCommand() {
 }
 
 function redoCommand() {
+  if (state.routeDraft?.input === 'poly') {
+    redoPolylinePoint();
+    return;
+  }
   if (state.routeDraft) {
     setStatus('Drawing');
     return;
@@ -262,10 +266,15 @@ function updateSelectedLineColor(color) {
 function undoPolylinePoint() {
   if (!state.routeDraft || state.routeDraft.input !== 'poly') return;
   if (state.routeDraft.points.length > 1) {
-    state.routeDraft.points.pop();
+    const point = state.routeDraft.points.pop();
+    if (point) {
+      state.routeDraft.undonePoints = state.routeDraft.undonePoints || [];
+      state.routeDraft.undonePoints.push(point);
+    }
     const last = state.routeDraft.points[state.routeDraft.points.length - 1];
     state.routeDraft.previewPoint = last ? [...last] : null;
     drawTemp();
+    syncDockActionButtons();
     setStatus('Point Undo');
     return;
   }
@@ -273,6 +282,21 @@ function undoPolylinePoint() {
   state.drag = null;
   render();
   setStatus('Cancelled');
+}
+
+function redoPolylinePoint() {
+  if (!state.routeDraft || state.routeDraft.input !== 'poly') return;
+  const point = state.routeDraft.undonePoints?.pop();
+  if (!point) {
+    setStatus('No Redo');
+    syncDockActionButtons();
+    return;
+  }
+  state.routeDraft.points.push(point);
+  state.routeDraft.previewPoint = [...point];
+  drawTemp();
+  syncDockActionButtons();
+  setStatus('Point Redo');
 }
 
 document.addEventListener('keydown', (event) => {

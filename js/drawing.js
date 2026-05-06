@@ -211,13 +211,30 @@ function drawRouteEnd(group, route) {
   }
 }
 
+function routeHandleIndexes(route) {
+  const lastIndex = route.points.length - 1;
+  if (lastIndex <= 0) return [];
+  const compact = route.mode === 'draw' || route.points.length > 10;
+  if (!compact) return route.points.map((_, index) => index);
+
+  const maxHandles = needsLargeTouchTargets() ? 6 : 9;
+  const indexes = new Set([0, lastIndex]);
+  const innerCount = Math.max(0, maxHandles - 2);
+  for (let i = 1; i <= innerCount; i += 1) {
+    indexes.add(Math.round((lastIndex * i) / (innerCount + 1)));
+  }
+  return [...indexes].sort((a, b) => a - b);
+}
+
 function drawRouteHandles(group, route) {
   const touchSized = needsLargeTouchTargets();
-  const handleRadius = touchSized ? 18 : 14;
+  const compact = route.mode === 'draw' || route.points.length > 10;
+  const handleRadius = compact ? (touchSized ? 11 : 9) : (touchSized ? 18 : 14);
   const insertRadius = touchSized ? 13 : 9;
-  route.points.forEach((point, index) => {
+  routeHandleIndexes(route).forEach((index) => {
+    const point = route.points[index];
     group.append(svgEl('circle', {
-      class: 'route-handle',
+      class: `route-handle${compact ? ' is-compact' : ''}`,
       cx: point[0],
       cy: point[1],
       r: handleRadius,
@@ -227,6 +244,7 @@ function drawRouteHandles(group, route) {
     }));
   });
 
+  if (compact) return;
   for (let i = 0; i < route.points.length - 1; i += 1) {
     const a = route.points[i];
     const b = route.points[i + 1];
@@ -625,7 +643,9 @@ function syncDockActionButtons() {
     && state.routeDraft.points.length >= 2
     && routeLength(state.routeDraft.points) > 20;
   const canUndoFromDock = state.routeDraft ? true : canUndoHistory();
-  const canRedoFromDock = !state.routeDraft && canRedoHistory();
+  const canRedoFromDock = state.routeDraft?.input === 'poly'
+    ? Boolean(state.routeDraft.undonePoints?.length)
+    : !state.routeDraft && canRedoHistory();
   document.querySelectorAll('[data-action="undo-history"]').forEach((button) => {
     button.setAttribute('aria-disabled', String(!canUndoFromDock));
   });

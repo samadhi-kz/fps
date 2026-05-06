@@ -31,6 +31,7 @@ function startRouteFromPoint(startPoint, event, player = null) {
     ...defaults,
     input: 'drag',
     ...(player ? { playerId: player.id } : {}),
+    undonePoints: [],
     points: [start, [point.x, point.y]]
   };
   state.drag = { kind: 'draw-route', start: [point.x, point.y], moved: false };
@@ -65,6 +66,7 @@ function startFreehandRouteFromPoint(startPoint, player = null) {
     ...defaults,
     input: 'freehand',
     ...(player ? { playerId: player.id } : {}),
+    undonePoints: [],
     points: [start]
   };
   state.drag = { kind: 'freehand-route', last: start };
@@ -97,10 +99,12 @@ function startPolylineFromDraft(event) {
   const point = pointFromEvent(event);
   state.routeDraft.input = 'poly';
   state.routeDraft.points = [state.routeDraft.points[0]];
+  state.routeDraft.undonePoints = [];
   state.routeDraft.previewPoint = [point.x, point.y];
   state.drag = null;
   setStatus('Click points, Enter to finish');
   drawTemp();
+  syncDockActionButtons();
 }
 
 function addPolylinePoint(point) {
@@ -110,9 +114,11 @@ function addPolylinePoint(point) {
   const previous = points[points.length - 1];
   if (!previous || pointDistance(next, previous) > 4) {
     points.push(next);
+    state.routeDraft.undonePoints = [];
   }
   state.routeDraft.previewPoint = next;
   drawTemp();
+  syncDockActionButtons();
 }
 
 function updatePolylinePreview(event) {
@@ -157,7 +163,7 @@ function finishRoute() {
   if (state.routeDraft.mode === 'draw') points = simplifyPoints(points, 6);
   if (state.routeDraft.mode === 'curve') points = simplifyPoints(points, 3);
   if (points.length >= 2 && routeLength(points) > 20) {
-    const { input, previewPoint, ...draft } = state.routeDraft;
+    const { input, previewPoint, undonePoints, ...draft } = state.routeDraft;
     const route = { id: makeId('route'), ...draft, points };
     state.routes.push(route);
     state.routeDraft = null;
